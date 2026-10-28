@@ -18,7 +18,7 @@ const checks = [
   ...(quick ? [] : [
     ["database rules", "npm run test:db"],
     ["live end-to-end", `node scripts/live-flow.mjs --out "${join(logs, "flow")}"`],
-    ["live page sweep", `node "${join(process.env.USERPROFILE ?? "", ".claude/standards/live-check/live-check.mjs")}" --project . --base https://qrclock.vercel.app --email wb@ccov.co.za --paths "${SWEEP}" --widths 375,768,1280 --out "${join(logs, "sweep")}"`],
+    ["live page sweep", `node "${join(process.env.USERPROFILE ?? "", ".claude/standards/live-check/live-check.mjs")}" --project . --base https://clock.ccov.co.za --email wb@ccov.co.za --paths "${SWEEP}" --widths 375,768,1280 --out "${join(logs, "sweep")}"`],
   ]),
 ];
 

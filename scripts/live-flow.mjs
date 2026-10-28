@@ -12,7 +12,7 @@ import { chromium } from "playwright-core";
 import { createClient } from "@supabase/supabase-js";
 
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
-const base = arg("base", "https://qrclock.vercel.app").replace(/\/$/, "");
+const base = arg("base", "https://clock.ccov.co.za").replace(/\/$/, "");
 const email = arg("email", "wb@ccov.co.za");
 const out = arg("out", join(tmpdir(), "qrclock-live"));
 mkdirSync(out, { recursive: true });
