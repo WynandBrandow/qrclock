@@ -1,6 +1,8 @@
 import { requireViewer } from "@/lib/auth";
 import { currentWeekStart, lastEvent, loadWeek, must, namesById, pickWeek } from "@/lib/data";
 import { db } from "@/lib/supabase/server";
+import { passkeysFor } from "@/lib/passkeys";
+import MyPasskeys from "@/components/MyPasskeys";
 import { currentState, KIND_LABEL, type EventKind } from "@/lib/shifts";
 import { addDays, fmtDateTime, fmtDay, fmtMinutes, weekBounds } from "@/lib/time";
 import ShiftTable, { TotalsStrip } from "@/components/ShiftTable";
@@ -13,12 +15,13 @@ export default async function MyHours({ searchParams }: PageProps<"/me">) {
   const c = v.company;
   const week = pickWeek(c, (await searchParams).week);
   const { from, to } = weekBounds(week, c.timezone);
-  const [[w], last, changes, names] = await Promise.all([
+  const [[w], last, changes, names, keys] = await Promise.all([
     loadWeek(c, week, v.employee.id), lastEvent(v.employee.id),
     db().from("event_corrections").select("id, action, reason, corrected_at, corrected_by, before, after")
       .eq("employee_id", v.employee.id).gte("event_time", from.toISOString()).lt("event_time", to.toISOString())
       .order("corrected_at", { ascending: false }).then(must),
     namesById(c.id),
+    c.phone_clocking ? passkeysFor(v.employee.id) : Promise.resolve([]),
   ]);
   const { state } = currentState(last, c);
   const t = w?.totals;
@@ -41,6 +44,13 @@ export default async function MyHours({ searchParams }: PageProps<"/me">) {
       <ShiftTable shifts={w?.shifts ?? []} tz={c.timezone} />
       {!!t?.issueCount && (
         <p className="mt-4 text-sm text-slate-600"><Badge tone="red">Needs a fix</Badge> Shifts marked like this are missing a scan. Your manager will correct them.</p>
+      )}
+      {c.phone_clocking && (
+        <section className="mt-8 card p-5">
+          <h2 className="text-lg font-semibold mb-3">Face ID / fingerprint</h2>
+          <MyPasskeys keys={keys.map(k => ({ id: k.id, device_label: k.device_label, created_at: k.created_at, last_used_at: k.last_used_at }))}
+            required={c.phone_require_passkey} tz={c.timezone} />
+        </section>
       )}
       <section className="mt-8 card p-5 flex flex-col sm:flex-row gap-5 items-start">
         {/* eslint-disable-next-line @next/next/no-img-element */}

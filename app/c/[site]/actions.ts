@@ -3,6 +3,8 @@ import { db } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/auth";
 import { lastEvent } from "@/lib/data";
 import { distanceMeters } from "@/lib/geo";
+import { verifyPasskey } from "@/lib/passkeys";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { actionEvent, currentState, nextActions, type Action } from "@/lib/shifts";
 
 export type PhonePunch =
@@ -14,6 +16,7 @@ const ACTIONS: Action[] = ["clock_in", "clock_out", "break_start", "break_end", 
 /** A punch from the person's own phone, after scanning the depot poster. */
 export async function phonePunch(input: {
   site: string; action: string; lat?: number | null; lng?: number | null; accuracy?: number | null;
+  passkey?: AuthenticationResponseJSON | null;
 }): Promise<PhonePunch> {
   const v = await getViewer();
   if (!v) return { ok: false, error: "You're signed out on this phone. Sign in again, then scan the poster." };
@@ -38,6 +41,11 @@ export async function phonePunch(input: {
     return { ok: false, error: far
       ? `You're about ${(distance! / 1000).toFixed(distance! < 10_000 ? 1 : 0)} km from ${loc.name}. Clock in when you're at the depot.`
       : "Allow location for this site so we can check you're at the depot, then try again." };
+  }
+
+  // Face ID / fingerprint: proves the phone's owner is the one tapping, not just someone holding it.
+  if (c.phone_require_passkey && (!input.passkey || !(await verifyPasskey(v, input.passkey)))) {
+    return { ok: false, error: "Face ID or fingerprint check didn't go through. Tap the button again." };
   }
 
   const { state } = currentState(await lastEvent(v.employee.id), c);

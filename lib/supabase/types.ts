@@ -167,6 +167,7 @@ export type Database = {
           name: string
           phone_clocking: boolean
           phone_require_location: boolean
+          phone_require_passkey: boolean
           record_location: boolean
           rest_breaks: boolean
           timezone: string
@@ -185,6 +186,7 @@ export type Database = {
           name: string
           phone_clocking?: boolean
           phone_require_location?: boolean
+          phone_require_passkey?: boolean
           record_location?: boolean
           rest_breaks?: boolean
           timezone?: string
@@ -203,6 +205,7 @@ export type Database = {
           name?: string
           phone_clocking?: boolean
           phone_require_location?: boolean
+          phone_require_passkey?: boolean
           record_location?: boolean
           rest_breaks?: boolean
           timezone?: string
@@ -472,6 +475,60 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passkeys: {
+        Row: {
+          company_id: string
+          counter: number
+          created_at: string
+          credential_id: string
+          device_label: string | null
+          employee_id: string
+          id: string
+          last_used_at: string | null
+          public_key: string
+          transports: string[] | null
+        }
+        Insert: {
+          company_id: string
+          counter?: number
+          created_at?: string
+          credential_id: string
+          device_label?: string | null
+          employee_id: string
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          transports?: string[] | null
+        }
+        Update: {
+          company_id?: string
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          device_label?: string | null
+          employee_id?: string
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          transports?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passkeys_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passkeys_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]

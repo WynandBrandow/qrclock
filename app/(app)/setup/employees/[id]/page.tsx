@@ -5,6 +5,8 @@ import { db } from "@/lib/supabase/server";
 import { cardSvg } from "@/lib/cards";
 import { fmtDateTime } from "@/lib/time";
 import { newQrCode, saveEmployee, setPin } from "../../actions";
+import { removeAllPasskeys } from "@/app/passkeys/actions";
+import { passkeysFor } from "@/lib/passkeys";
 import Form from "@/components/Form";
 import IdCard from "@/components/IdCard";
 import { PageHeader } from "@/components/ui";
@@ -17,7 +19,7 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
   const { id } = await params;
   const { data: e } = await db().from("employees").select("*").eq("id", id).maybeSingle<Employee>();
   if (!e || e.company_id !== v.company.id) notFound();
-  const svg = await cardSvg(e.qr_token);
+  const [svg, keys] = await Promise.all([cardSvg(e.qr_token), passkeysFor(e.id)]);
   const tz = v.company.timezone;
 
   return (
@@ -94,6 +96,18 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
             </div>
           </Form>
           <p className="text-xs text-slate-500 mt-3">Give the PIN to them privately. If they forget it, set a new one here.</p>
+          <div className="mt-4 pt-4 border-t border-slate-100 text-sm">
+            <div className="font-medium text-slate-800">Face ID / fingerprint</div>
+            <p className="text-slate-600 mt-1">{keys.length ? `Set up on ${keys.length} phone${keys.length > 1 ? "s" : ""}.` : "Not set up yet."}</p>
+            {keys.length > 0 && (
+              <div className="mt-3">
+                <Form action={removeAllPasskeys} submit="Reset (new or lost phone)" tone="danger"
+                  confirm={`Remove ${e.full_name}'s Face ID / fingerprint on all phones? They set it up again on their next scan.`}>
+                  <input type="hidden" name="id" value={e.id} />
+                </Form>
+              </div>
+            )}
+          </div>
           {e.pin_hash && (
             <div className="mt-4 pt-4 border-t border-slate-100">
               <Form action={setPin} submit="Remove PIN" tone="danger" confirm={`Remove ${e.full_name}'s PIN? They won't be able to sign in with their card.`}>

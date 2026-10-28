@@ -57,6 +57,7 @@ export default async function Settings() {
           <fieldset className="space-y-3">
             <legend className="label">Clocking in by phone</legend>
             {check("phone_clocking", c.phone_clocking, "Staff can clock in with their phone", "They scan the depot’s QR poster (Setup → Locations) with their own phone. No tablet needed.")}
+            {check("phone_require_passkey", c.phone_require_passkey, "Confirm phone punches with Face ID or fingerprint", "Each person sets it up once on their phone; then every clock-in or out needs their face or fingerprint, so a borrowed or unlocked phone can’t be used. The biometric never leaves the phone.")}
             {check("phone_require_location", c.phone_require_location, "Refuse phone scans away from the depot", "Off: scans from far away (or without location) are recorded but flagged on Review. On: they are refused. Set the depot’s position under Setup → Locations.")}
           </fieldset>
           <fieldset className="space-y-3">

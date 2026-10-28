@@ -5,6 +5,8 @@ import { lastEvent } from "@/lib/data";
 import { firstName } from "@/lib/kiosk";
 import { currentState, nextActions } from "@/lib/shifts";
 import PhoneClock from "./PhoneClock";
+import PasskeySetup from "@/components/PasskeySetup";
+import { passkeysFor } from "@/lib/passkeys";
 
 export const metadata = { title: "Clock in" };
 
@@ -45,11 +47,24 @@ export default async function SitePage({ params }: PageProps<"/c/[site]">) {
 
   const c = v.company;
   if (!c.phone_clocking) return shell(<p className="text-slate-700">Clocking in by phone isn&apos;t switched on. Use the kiosk, or ask your manager.</p>);
+  if (c.phone_require_passkey && (await passkeysFor(v.employee.id)).length === 0) {
+    return shell(
+      <>
+        <h1 className="text-lg font-semibold">One more step, {firstName(v.employee.full_name)}</h1>
+        <p className="text-sm text-slate-600 mt-2 mb-5">
+          {c.name} asks you to confirm each clock-in with Face ID or your fingerprint, so only you can clock in as you. Set it up once on this phone; your face or fingerprint never leaves the phone.
+        </p>
+        <PasskeySetup />
+        <p className="text-sm text-slate-600 mt-4">Then scan the poster again.</p>
+      </>,
+    );
+  }
   const last = await lastEvent(v.employee.id);
   const { state, stale } = currentState(last, c);
   return shell(
     <PhoneClock site={site} siteName={loc.name} name={firstName(v.employee.full_name)} tz={c.timezone}
       state={state} stale={stale} since={last?.occurred_at ?? null} actions={nextActions(state, c)}
-      restBreaks={c.track_breaks && c.rest_breaks} wantLocation={loc.latitude != null && loc.longitude != null} />,
+      restBreaks={c.track_breaks && c.rest_breaks} wantLocation={loc.latitude != null && loc.longitude != null}
+      requirePasskey={c.phone_require_passkey} />,
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { startAuthentication } from "@simplewebauthn/browser";
 import { phonePunch, type PhonePunch } from "./actions";
+import { startPasskeyCheck } from "@/app/passkeys/actions";
 
 type Action = "clock_in" | "clock_out" | "break_start" | "break_end" | "rest_start";
 
@@ -27,7 +29,7 @@ function locate(): Promise<{ lat: number; lng: number; accuracy: number } | null
 
 export default function PhoneClock(p: {
   site: string; siteName: string; name: string; tz: string; state: string; stale: boolean; since: string | null;
-  actions: Action[]; restBreaks: boolean; wantLocation: boolean;
+  actions: Action[]; restBreaks: boolean; wantLocation: boolean; requirePasskey: boolean;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [result, setResult] = useState<PhonePunch | null>(null);
@@ -39,11 +41,25 @@ export default function PhoneClock(p: {
 
   const tap = async (a: Action) => {
     if (busy) return;
+    let passkey = null;
+    if (p.requirePasskey) {
+      // Face ID / fingerprint first, straight from the tap (iPhones only allow it from a tap).
+      setBusy("Confirm with Face ID or your fingerprint…");
+      try {
+        const start = await startPasskeyCheck();
+        if (!start.ok) { setResult({ ok: false, error: start.error }); setBusy(null); return; }
+        passkey = await startAuthentication({ optionsJSON: start.options });
+      } catch {
+        setResult({ ok: false, error: "Face ID or fingerprint wasn't confirmed. Nothing was saved; tap again." });
+        setBusy(null);
+        return;
+      }
+    }
     setBusy(p.wantLocation ? "Checking you're at the depot…" : "Saving…");
     const fix = p.wantLocation ? await locate() : null;
     setBusy("Saving…");
     try {
-      setResult(await phonePunch({ site: p.site, action: a, lat: fix?.lat, lng: fix?.lng, accuracy: fix?.accuracy }));
+      setResult(await phonePunch({ site: p.site, action: a, lat: fix?.lat, lng: fix?.lng, accuracy: fix?.accuracy, passkey }));
     } catch {
       setResult({ ok: false, error: "No connection. Nothing was saved; try again or tell your manager the time." });
     }

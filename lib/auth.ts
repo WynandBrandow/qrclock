@@ -36,6 +36,7 @@ export type Company = Settings & {
   daily_summary: boolean;
   phone_clocking: boolean;
   phone_require_location: boolean;
+  phone_require_passkey: boolean;
 };
 
 export type Viewer = {

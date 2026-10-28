@@ -201,6 +201,7 @@ export async function saveSettings(_: FormResult, f: FormData): Promise<FormResu
       track_breaks: f.get("track_breaks") === "on", breaks_paid: f.get("breaks_paid") === "on", record_location: f.get("record_location") === "on",
       rest_breaks: f.get("rest_breaks") === "on", daily_summary: f.get("daily_summary") === "on",
       phone_clocking: f.get("phone_clocking") === "on", phone_require_location: f.get("phone_require_location") === "on",
+      phone_require_passkey: f.get("phone_require_passkey") === "on",
     }).eq("id", v.company.id);
     if (error) throw error;
     return saved("Settings saved.");

@@ -74,7 +74,7 @@ function qrVideo(text) {
   return Buffer.concat([Buffer.from(`YUV4MPEG2 W${W} H${H} F10:1 Ip A1:1 C420jpeg\n`), ...Array(10).fill(frame)]);
 }
 
-let employeeId = null, kioskId = null, locationId = null;
+let employeeId = null, kioskId = null, locationId = null, locationToken = null, companyId = null, passkeyWas = null;
 try {
   const admin = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   await admin.context().addCookies(adminCookies);
@@ -267,7 +267,7 @@ try {
       company_id: emp2.company_id, name: "TEST depot e2e", latitude: -25.5400, longitude: 152.7000, radius_m: 200,
     }).select("id, qr_token").single();
     assert.ifError(locErr);
-    locationId = loc.id;
+    locationId = loc.id; locationToken = loc.qr_token; companyId = emp2.company_id;
     await db.rpc("backdate_test_events", { p_employee_id: employeeId, p_seconds: 120 });
 
     const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true,
@@ -300,6 +300,51 @@ try {
     await ctx.close();
   });
 
+  await step("Face ID / fingerprint: set up once, then each punch needs it; a failed check is refused", async () => {
+    const { data: co } = await db.from("companies").select("phone_require_passkey").eq("id", companyId).single();
+    passkeyWas = co.phone_require_passkey;
+    await db.from("companies").update({ phone_require_passkey: true }).eq("id", companyId);
+    await db.rpc("backdate_test_events", { p_employee_id: employeeId, p_seconds: 120 });
+
+    const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true,
+      permissions: ["geolocation"], geolocation: { latitude: -25.5401, longitude: 152.7002, accuracy: 15 } });
+    const phone = await ctx.newPage();
+    watch(phone, "passkey");
+    // A virtual authenticator stands in for the phone's Face ID / fingerprint sensor.
+    const cdp = await ctx.newCDPSession(phone);
+    await cdp.send("WebAuthn.enable");
+    const { authenticatorId } = await cdp.send("WebAuthn.addVirtualAuthenticator", { options: {
+      protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
+    await phone.goto(card);
+    await phone.locator("#pin").fill(PIN);
+    await phone.getByRole("button", { name: "See my hours" }).click();
+    await phone.waitForURL(`${base}/me`);
+    await phone.goto(`${base}/c/${locationToken}`);
+    await phone.getByRole("heading", { name: /One more step/ }).waitFor();
+    await phone.getByRole("button", { name: "Set up Face ID / fingerprint" }).click();
+    await phone.getByRole("heading", { name: "Hi TEST" }).waitFor({ timeout: 15000 });
+    const { count: keys } = await db.from("passkeys").select("id", { count: "exact", head: true }).eq("employee_id", employeeId);
+    assert.equal(keys, 1);
+
+    await phone.getByRole("button", { name: "Clock in" }).click();
+    await phone.getByRole("heading", { name: "Clocked in" }).waitFor();
+    const { data: k } = await db.from("passkeys").select("last_used_at").eq("employee_id", employeeId).single();
+    assert.ok(k.last_used_at, "passkey use recorded");
+
+    // A failed Face ID / fingerprint: nothing is recorded.
+    await db.rpc("backdate_test_events", { p_employee_id: employeeId, p_seconds: 120 });
+    await cdp.send("WebAuthn.setUserVerified", { authenticatorId, isUserVerified: false });
+    await phone.goto(`${base}/c/${locationToken}`);
+    await phone.getByRole("button", { name: "Clock out" }).click();
+    await phone.getByText(/wasn't confirmed|didn't go through/).waitFor();
+    const { data: last } = await db.from("clock_events").select("kind").eq("employee_id", employeeId).eq("status", "active")
+      .order("created_at", { ascending: false }).limit(1).single();
+    assert.equal(last.kind, "clock_in", "a failed check must not record anything");
+    await ctx.close();
+    await db.from("companies").update({ phone_require_passkey: passkeyWas }).eq("id", companyId);
+    passkeyWas = null;
+  });
+
   await step("sign-in email link: opens on any device, Continue signs in, and the link works only once", async () => {
     // The same link the email template builds, from a server-made token (no email is sent).
     const l = await fetch(`${sbUrl}/auth/v1/admin/generate_link`, {
@@ -328,6 +373,7 @@ try {
     const { error } = await db.rpc("purge_test_data", { p_employee_id: employeeId });
     if (error) console.error("cleanup failed:", error.message);
   }
+  if (passkeyWas !== null && companyId) await db.from("companies").update({ phone_require_passkey: passkeyWas }).eq("id", companyId);
   if (locationId) await db.from("locations").delete().eq("id", locationId);
   if (kioskId) {
     await db.from("scan_log").delete().eq("kiosk_id", kioskId);
