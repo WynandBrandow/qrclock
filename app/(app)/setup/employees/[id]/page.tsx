@@ -33,6 +33,25 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
             <div><label className="label" htmlFor="full_name">Full name</label><input id="full_name" name="full_name" className="input" defaultValue={e.full_name} required /></div>
             <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" className="input" defaultValue={e.email ?? ""} /></div>
             <RoleField value={e.role} />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="label" htmlFor="payroll_code">Payroll ID</label>
+                <input id="payroll_code" name="payroll_code" className="input" defaultValue={e.payroll_code ?? ""} placeholder="optional" />
+              </div>
+              <div>
+                <label className="label" htmlFor="employment_type">Employment</label>
+                <select id="employment_type" name="employment_type" className="input" defaultValue={e.employment_type ?? ""}>
+                  <option value="">Not set</option>
+                  <option value="full_time">Full-time</option>
+                  <option value="part_time">Part-time</option>
+                  <option value="casual">Casual</option>
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="start_date">Start date</label>
+                <input id="start_date" name="start_date" type="date" className="input" defaultValue={e.start_date ?? ""} />
+              </div>
+            </div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={e.active} className="h-4 w-4 accent-teal-600" /> Active (can clock in and sign in)</label>
           </Form>
         </section>
@@ -49,7 +68,8 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
           <details className="text-sm">
             <summary className="cursor-pointer text-slate-600">Card lost or stolen?</summary>
             <div className="mt-3">
-              <Form action={newQrCode} submit="Make a new QR code" tone="danger">
+              <Form action={newQrCode} submit="Make a new QR code" tone="danger" pendingLabel="Making…"
+                confirm={`Make a new QR code for ${e.full_name}? Their current card stops working straight away.`}>
                 <input type="hidden" name="id" value={e.id} />
                 <p className="text-slate-600">The old card stops working straight away.</p>
               </Form>
@@ -65,10 +85,19 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
           <Form action={setPin} submit={e.pin_hash ? "Change PIN" : "Set PIN"} reset>
             <input type="hidden" name="id" value={e.id} />
             <div>
-              <label className="label" htmlFor="pin">New PIN (4 to 8 digits). Leave empty to remove it.</label>
-              <input id="pin" name="pin" className="input max-w-40 tracking-widest" inputMode="numeric" pattern="\d{4,8}" maxLength={8} autoComplete="off" />
+              <label className="label" htmlFor="pin">New PIN (4 to 8 digits)</label>
+              <input id="pin" name="pin" className="input max-w-40 tracking-widest" inputMode="numeric" pattern="\d{4,8}" maxLength={8} autoComplete="off" required />
             </div>
           </Form>
+          <p className="text-xs text-slate-500 mt-3">Give the PIN to them privately. If they forget it, set a new one here.</p>
+          {e.pin_hash && (
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <Form action={setPin} submit="Remove PIN" tone="danger" confirm={`Remove ${e.full_name}'s PIN? They won't be able to sign in with their card.`}>
+                <input type="hidden" name="id" value={e.id} />
+                <input type="hidden" name="pin" value="" />
+              </Form>
+            </div>
+          )}
         </section>
       </div>
     </div>

@@ -1,9 +1,7 @@
 // First-run setup: one company and its first administrator. Safe to run again.
 // Run: npm run seed -- "<Business name>" "<Admin full name>" <admin email>
-import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-
-const env = Object.fromEntries(readFileSync(".env.local", "utf8").split(/\r?\n/).filter(l => l.includes("=")).map(l => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]));
+import { env } from "./env.mjs";
 const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 const [company, adminName, adminEmail] = process.argv.slice(2);

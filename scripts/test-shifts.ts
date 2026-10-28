@@ -2,15 +2,15 @@
 // Run: npm test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildShifts, currentState, nextActions, shiftsInWeek, totals, type ClockEvent, type EventKind, type Settings } from "../lib/shifts";
+import { buildShifts, currentState, nextActions, shiftsInWeek, totals, type ClockEvent, type EventKind, type Holiday, type Settings } from "../lib/shifts";
 import { localDate, weekBounds, weekStartOf, zonedToUtc } from "../lib/time";
 
-const BNE: Settings = { timezone: "Australia/Brisbane", week_start: 1, track_breaks: true, breaks_paid: false, long_shift_hours: 14 };
+const BNE: Settings = { timezone: "Australia/Brisbane", week_start: 1, track_breaks: true, breaks_paid: false, rest_breaks: false, long_shift_hours: 14, meal_break_after_hours: 5, min_meal_break_minutes: 30 };
 let n = 0;
 // Brisbane is UTC+10 all year.
-const ev = (kind: EventKind, local: string): ClockEvent => ({
+const ev = (kind: EventKind, local: string, paid_break: boolean | null = null): ClockEvent => ({
   id: `e${++n}`, employee_id: "a", kind, occurred_at: zonedToUtc(local.slice(0, 10), local.slice(11, 16), BNE.timezone).toISOString(),
-  source: "kiosk", flag: null, flag_resolved_at: null, replaces_id: null, location_id: null, kiosk_id: null,
+  source: "kiosk", flag: null, flag_resolved_at: null, replaces_id: null, location_id: null, kiosk_id: null, paid_break,
 });
 const NOW = new Date("2026-11-10T00:00:00Z");
 
@@ -99,4 +99,62 @@ test("next actions follow the state; a forgotten shift offers a fresh clock-in",
   assert.deepEqual(nextActions("working", { ...BNE, track_breaks: false }), ["clock_out"]);
   const stale = currentState(last("clock_in", "2026-10-25 08:00"), BNE, now);
   assert.deepEqual(stale, { state: "off", stale: true });
+});
+
+test("same-minute events pair closing-first, whatever order they arrive in", () => {
+  const a = ev("clock_in", "2026-10-26 09:00"), b = ev("clock_out", "2026-10-26 13:00"), c = ev("clock_in", "2026-10-26 13:00"), d = ev("clock_out", "2026-10-26 17:00");
+  for (const order of [[a, b, c, d], [a, c, b, d], [d, c, b, a]]) {
+    const s = buildShifts(order, BNE, NOW);
+    assert.equal(s.length, 2);
+    assert.deepEqual(s.map(x => x.issues), [[], []]);
+    assert.equal(totals(s).workedMinutes, 480);
+  }
+});
+
+test("a paid rest break is not deducted; an unpaid meal break is", () => {
+  const s = buildShifts([
+    ev("clock_in", "2026-10-26 08:00"), ev("break_start", "2026-10-26 10:00", true), ev("break_end", "2026-10-26 10:10"),
+    ev("break_start", "2026-10-26 12:00", false), ev("break_end", "2026-10-26 12:30"), ev("clock_out", "2026-10-26 16:30"),
+  ], BNE, NOW);
+  assert.equal(s[0].breakMinutes, 40);
+  assert.equal(s[0].unpaidBreakMinutes, 30);
+  assert.equal(s[0].workedMinutes, 8 * 60);
+  assert.deepEqual(s[0].warnings, []);
+});
+
+test("no meal break after 5 hours is a warning, not an issue", () => {
+  const s = buildShifts([ev("clock_in", "2026-10-26 08:00"), ev("break_start", "2026-10-26 10:00", true), ev("break_end", "2026-10-26 10:10"), ev("clock_out", "2026-10-26 14:00")], BNE, NOW);
+  assert.deepEqual(s[0].warnings, ["no_meal_break"]);
+  assert.deepEqual(s[0].issues, []);
+  assert.deepEqual(buildShifts([ev("clock_in", "2026-10-26 08:00"), ev("clock_out", "2026-10-26 13:00")], BNE, NOW)[0].warnings, []);
+  assert.deepEqual(buildShifts([ev("clock_in", "2026-10-26 08:00"), ev("clock_out", "2026-10-26 14:00")], { ...BNE, meal_break_after_hours: 0 }, NOW)[0].warnings, []);
+});
+
+test("a Friday-night shift splits at midnight into weekday and Saturday hours", () => {
+  const s = buildShifts([ev("clock_in", "2026-10-30 22:00"), ev("clock_out", "2026-10-31 06:00")], BNE, NOW);
+  assert.equal(s[0].date, "2026-10-30");
+  assert.deepEqual(s[0].byCategory, { ordinary: 120, saturday: 360, sunday: 0, public_holiday: 0 });
+});
+
+test("an unpaid break is removed from the right day's bucket", () => {
+  const s = buildShifts([ev("clock_in", "2026-10-31 20:00"), ev("break_start", "2026-11-01 00:30"), ev("break_end", "2026-11-01 01:00"), ev("clock_out", "2026-11-01 04:00")], BNE, NOW);
+  assert.equal(s[0].workedMinutes, 7 * 60 + 30);
+  assert.deepEqual(s[0].byCategory, { ordinary: 0, saturday: 240, sunday: 210, public_holiday: 0 });
+});
+
+test("public holidays, including part-day ones like Christmas Eve from 6 pm", () => {
+  const xmas: Holiday[] = [{ date: "2026-12-24", from_time: "18:00:00", to_time: "24:00:00" }, { date: "2026-12-25", from_time: "00:00:00", to_time: "24:00:00" }];
+  const s = buildShifts([ev("clock_in", "2026-12-24 14:00"), ev("clock_out", "2026-12-25 02:00")], BNE, new Date("2027-01-01T00:00:00Z"), xmas);
+  assert.deepEqual(s[0].byCategory, { ordinary: 240, saturday: 0, sunday: 0, public_holiday: 480 });
+  assert.equal(totals(s).byCategory.public_holiday, 480);
+});
+
+test("category buckets always add up to the rounded worked minutes", () => {
+  const s = buildShifts([ev("clock_in", "2026-10-30 23:59"), ev("clock_out", "2026-10-31 08:01")], BNE, NOW);
+  const sum = Object.values(s[0].byCategory).reduce((a, b) => a + b, 0);
+  assert.equal(sum, s[0].workedMinutes);
+});
+
+test("rest breaks add a third kiosk action when switched on", () => {
+  assert.deepEqual(nextActions("working", { ...BNE, rest_breaks: true }), ["clock_out", "break_start", "rest_start"]);
 });

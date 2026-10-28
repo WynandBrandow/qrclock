@@ -10,11 +10,13 @@
     "test": "tsx --test scripts/test-shifts.ts",
     "test:db": "tsx scripts/test-db.mts",
     "seed": "tsx scripts/seed.mts",
-    "verify:live": "node scripts/live-flow.mjs"
+    "verify:live": "node scripts/live-flow.mjs",
+    "backup:open": "tsx scripts/backup-open.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
+    "@vercel/blob": "^2.8.2",
     "next": "16.4.3",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
@@ -34,5 +36,10 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@vercel/cli-config": {
+      "zod": "4.6.7"
+    }
   }
 }

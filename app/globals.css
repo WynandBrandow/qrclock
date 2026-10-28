@@ -13,7 +13,7 @@ body {
 .btn-primary, .btn-secondary, .btn-danger {
   @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
 }
-.btn-primary { @apply bg-teal-600 text-white hover:bg-teal-700; }
+.btn-primary { @apply bg-teal-700 text-white hover:bg-teal-800; }
 .btn-secondary { @apply bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50; }
 .btn-danger { @apply bg-white text-red-700 ring-1 ring-red-200 hover:bg-red-50; }
 .input {

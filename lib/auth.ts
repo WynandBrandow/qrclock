@@ -20,6 +20,10 @@ export type Employee = {
   pin_hash: string | null;
   pin_failed_count: number;
   pin_locked_until: string | null;
+  pin_version: number;
+  payroll_code: string | null;
+  employment_type: string | null;
+  start_date: string | null;
   active: boolean;
 };
 
@@ -68,10 +72,11 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   const store = await cookies();
   const payload = unsign(store.get(PIN_COOKIE)?.value);
   if (payload) {
-    const [id, exp] = payload.split("|");
+    const [id, exp, version] = payload.split("|");
     if (Number(exp) > Date.now()) {
       const { data: emp } = await db().from("employees").select("*").eq("id", id).maybeSingle<Employee>();
-      if (emp?.active) return { employee: emp, company: await getCompany(emp.company_id), via: "pin", role: "employee" };
+      // A new PIN or a new card bumps pin_version, which ends every PIN session already open.
+      if (emp?.active && String(emp.pin_version) === version) return { employee: emp, company: await getCompany(emp.company_id), via: "pin", role: "employee" };
     }
   }
   return null;
@@ -98,9 +103,9 @@ export async function assertViewer(roles?: Role[]): Promise<Viewer> {
   return v;
 }
 
-export async function startPinSession(employeeId: string) {
+export async function startPinSession(employeeId: string, pinVersion: number) {
   const exp = Date.now() + PIN_HOURS * 3600_000;
-  (await cookies()).set(PIN_COOKIE, sign(`${employeeId}|${exp}`), {
+  (await cookies()).set(PIN_COOKIE, sign(`${employeeId}|${exp}|${pinVersion}`), {
     httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: PIN_HOURS * 3600,
   });
 }

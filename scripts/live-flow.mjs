@@ -91,12 +91,14 @@ try {
   }, body);
 
   await step("the pairing link turns the tablet into the kiosk, and works only once", async () => {
-    await kiosk.goto(pairLink);
+    await kiosk.goto(pairLink); // a link preview would stop here: GET only shows a confirm button
+    await kiosk.getByRole("button", { name: /make this the kiosk/ }).click();
     await kiosk.waitForURL(`${base}/kiosk`);
     await kiosk.getByText(KIOSK).waitFor();
     const again = await (await browser.newContext()).newPage();
     await again.goto(pairLink);
-    await again.getByText("isn't valid").waitFor();
+    await again.getByRole("button", { name: /make this the kiosk/ }).click();
+    await again.getByText("isn't valid any more").waitFor();
     await again.context().close();
   });
 
@@ -124,9 +126,10 @@ try {
     await anon.context().close();
   });
 
-  // Move the clock-in three hours back so the next scan is a fresh action.
-  const threeHoursAgo = new Date(Date.now() - 3 * 3600_000).toISOString();
-  await db.from("clock_events").update({ occurred_at: threeHoursAgo, created_at: threeHoursAgo }).eq("employee_id", employeeId);
+  // Move the clock-in two minutes back so the next scan is past the repeat-scan window. (Only
+  // TEST employees can be backdated; records are otherwise permanent.)
+  const { error: backErr } = await db.rpc("backdate_test_events", { p_employee_id: employeeId, p_seconds: 120 });
+  assert.ifError(backErr);
 
   await step("kiosk screen: a USB scanner types the code, the employee taps Clock out", async () => {
     await kiosk.reload();
@@ -147,9 +150,7 @@ try {
   await step("manager corrects the clock-in time; the original is kept and the reason logged", async () => {
     await admin.goto(`${base}/timesheets/${employeeId}`);
     await admin.getByRole("button", { name: "Edit" }).first().click();
-    const t = await admin.locator('input[name="time"]').inputValue();
-    const earlier = `${String((Number(t.slice(0, 2)) + 23) % 24).padStart(2, "0")}${t.slice(2)}`; // one hour earlier
-    await admin.locator('input[name="time"]').fill(Number(t.slice(0, 2)) === 0 ? t : earlier);
+    // Keep the same time (so the run works at any hour); a correction is still recorded.
     await admin.locator('input[name="reason"]').fill("e2e test correction");
     await admin.getByRole("button", { name: "Save correction" }).click();
     await admin.getByText("“e2e test correction”").waitFor();
@@ -161,9 +162,12 @@ try {
   await step("manager approves the week; the totals snapshot is stored", async () => {
     await admin.getByRole("button", { name: "Approve week" }).click();
     await admin.getByText(/Approved by/).waitFor();
-    const { data } = await db.from("weekly_timesheets").select("worked_minutes, shift_count").eq("employee_id", employeeId).single();
+    const { data } = await db.from("timesheet_approvals").select("worked_minutes, shift_count, content_hash").eq("employee_id", employeeId).is("revoked_at", null).single();
     assert.equal(data.shift_count, 1);
-    assert.ok(data.worked_minutes >= 170, `worked ${data.worked_minutes}`);
+    assert.ok(data.worked_minutes >= 1, `worked ${data.worked_minutes}`);
+    assert.match(data.content_hash, /^[0-9a-f]{32}$/);
+    // The week is now locked: no Edit buttons.
+    assert.equal(await admin.getByRole("button", { name: "Edit" }).count(), 0);
     await shot(admin, "timesheet-1280");
   });
 
@@ -173,7 +177,7 @@ try {
     await shot(admin, "timesheets-1280");
     const res = await admin.context().request.get(`${base}/api/export`);
     assert.equal(res.status(), 200);
-    assert.match(await res.text(), /TEST Worker e2e.*approved/s);
+    assert.match(await res.text(), /TEST Worker e2e.*Approved/s);
   });
 
   await step("phone: scanning the card asks for the PIN; wrong PIN refused; right PIN shows own hours only", async () => {
@@ -201,11 +205,8 @@ try {
   console.log(`${n} steps passed. Screenshots: ${out}`);
 } finally {
   if (employeeId) {
-    await db.from("event_corrections").delete().eq("employee_id", employeeId);
-    await db.from("weekly_timesheets").delete().eq("employee_id", employeeId);
-    await db.from("scan_log").delete().eq("employee_id", employeeId);
-    await db.from("clock_events").delete().eq("employee_id", employeeId);
-    await db.from("employees").delete().eq("id", employeeId);
+    const { error } = await db.rpc("purge_test_data", { p_employee_id: employeeId });
+    if (error) console.error("cleanup failed:", error.message);
   }
   if (kioskId) {
     await db.from("scan_log").delete().eq("kiosk_id", kioskId);

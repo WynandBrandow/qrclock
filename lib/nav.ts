@@ -33,6 +33,7 @@ export const GROUPS: NavGroup[] = [
       { label: "QR cards", href: "/setup/cards", icon: "" },
       { label: "Kiosks", href: "/setup/kiosks", icon: "" },
       { label: "Locations", href: "/setup/locations", icon: "" },
+      { label: "Holidays", href: "/setup/holidays", icon: "" },
       { label: "Settings", href: "/setup/settings", icon: "" },
     ],
   },

@@ -31,7 +31,7 @@ export default async function Settings() {
               </select>
             </div>
             <div>
-              <label className="label" htmlFor="week_start">Work week starts on</label>
+              <label className="label" htmlFor="week_start">Pay week starts on</label>
               <select id="week_start" name="week_start" className="input" defaultValue={c.week_start}>
                 {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
               </select>
@@ -40,7 +40,19 @@ export default async function Settings() {
           <fieldset className="space-y-3">
             <legend className="label">Breaks</legend>
             {check("track_breaks", c.track_breaks, "Track breaks", "Staff scan their card to start and end a break.")}
-            {check("breaks_paid", c.breaks_paid, "Breaks are paid", "When off, break time is deducted from hours worked.")}
+            {check("breaks_paid", c.breaks_paid, "Meal breaks are paid", "When off, meal break time is deducted from hours worked.")}
+            {check("rest_breaks", c.rest_breaks, "Separate paid rest breaks", "The kiosk offers “Meal break” (unpaid unless paid above) and “Rest break” (always paid, e.g. a 10-minute award rest break).")}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="meal_after">Warn when no meal break after (hours)</label>
+                <input id="meal_after" name="meal_break_after_hours" type="number" step="0.25" min={0} max={24} className="input" defaultValue={c.meal_break_after_hours} />
+                <p className="text-xs text-slate-500 mt-1">0 turns the warning off. Many awards: 5 hours.</p>
+              </div>
+              <div>
+                <label className="label" htmlFor="meal_min">Shortest meal break that counts (minutes)</label>
+                <input id="meal_min" name="min_meal_break_minutes" type="number" min={0} max={240} className="input" defaultValue={c.min_meal_break_minutes} />
+              </div>
+            </div>
           </fieldset>
           <fieldset className="space-y-3">
             <legend className="label">Scans</legend>

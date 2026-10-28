@@ -7,19 +7,21 @@ import QrImage from "./QrImage";
 type Action = (s: FormResult, f: FormData) => Promise<FormResult>;
 
 /** A form bound to a server action, with its error or success message underneath. */
-export default function Form({ action, submit, children, className = "space-y-4", tone = "primary", reset = false, linkLabel, showQr = false }: {
+export default function Form({ action, submit, children, className = "space-y-4", tone = "primary", reset = false, linkLabel, showQr = false, confirm, pendingLabel = "Saving…" }: {
   action: Action; submit: string; children?: ReactNode; className?: string; tone?: "primary" | "secondary" | "danger";
   reset?: boolean; linkLabel?: string; showQr?: boolean;
+  /** Ask "are you sure?" first, for actions that are hard to undo. */
+  confirm?: string; pendingLabel?: string;
 }) {
   const [state, run, pending] = useActionState(action, { ok: false });
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => { if (state.ok && reset) ref.current?.reset(); }, [state, reset]);
   const btn = { primary: "btn-primary", secondary: "btn-secondary", danger: "btn-danger" }[tone];
   return (
-    <form ref={ref} action={run} className={className}>
+    <form ref={ref} action={run} className={className} onSubmit={e => { if (confirm && !window.confirm(confirm)) e.preventDefault(); }}>
       {children}
       <div className="flex flex-wrap items-center gap-3">
-        <button className={btn} disabled={pending}>{pending ? "Saving…" : submit}</button>
+        <button className={btn} disabled={pending}>{pending ? pendingLabel : submit}</button>
         {state.error && <span className="text-sm text-red-700" role="alert">{state.error}</span>}
         {state.ok && state.message && <span className="text-sm text-teal-700" role="status">{state.message}</span>}
       </div>

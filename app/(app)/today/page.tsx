@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { requireViewer } from "@/lib/auth";
 import { db } from "@/lib/supabase/server";
-import { activeEvents, currentWeekStart } from "@/lib/data";
-import { currentState, KIND_LABEL, type ClockEvent } from "@/lib/shifts";
+import { activeEvents, currentWeekStart, must } from "@/lib/data";
+import { currentState, eventLabel, type ClockEvent } from "@/lib/shifts";
 import { fmtDay, fmtTime, localDate, zonedToUtc } from "@/lib/time";
 import { Badge, Empty, PageHeader } from "@/components/ui";
 
@@ -14,9 +14,9 @@ export default async function Today() {
   const today = localDate(now, tz);
   const since = new Date(Math.min(zonedToUtc(today, "00:00", tz).getTime(), now.getTime() - (c.long_shift_hours + 1) * 3600_000));
 
-  const [events, { data: emps }, { count: flags }, { count: unknown }] = await Promise.all([
+  const [events, emps, { count: flags }, { count: unknown }] = await Promise.all([
     activeEvents(c.id, since, new Date(now.getTime() + 60_000)),
-    db().from("employees").select("id, full_name").eq("company_id", c.id).eq("active", true).order("full_name"),
+    db().from("employees").select("id, full_name").eq("company_id", c.id).eq("active", true).order("full_name").then(must),
     db().from("clock_events").select("id", { count: "exact", head: true })
       .eq("company_id", c.id).eq("status", "active").not("flag", "is", null).is("flag_resolved_at", null),
     db().from("scan_log").select("id", { count: "exact", head: true })
@@ -25,10 +25,10 @@ export default async function Today() {
 
   const lastBy = new Map<string, ClockEvent>();
   for (const e of events) lastBy.set(e.employee_id, e); // events are in time order
-  const people = (emps ?? []).map(e => ({ ...e, last: lastBy.get(e.id) ?? null, ...currentState(lastBy.get(e.id) ?? null, c, now) }));
+  const people = emps.map(e => ({ ...e, last: lastBy.get(e.id) ?? null, ...currentState(lastBy.get(e.id) ?? null, c, now) }));
   const working = people.filter(p => p.state !== "off");
   const todays = events.filter(e => localDate(new Date(e.occurred_at), tz) === today).reverse();
-  const name = new Map((emps ?? []).map(e => [e.id, e.full_name]));
+  const name = new Map(emps.map(e => [e.id, e.full_name]));
   const week = currentWeekStart(c);
 
   return (
@@ -75,7 +75,7 @@ export default async function Today() {
                 <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
                     <div className="font-medium truncate">{name.get(e.employee_id) ?? "Former employee"}</div>
-                    <div className="text-slate-500">{KIND_LABEL[e.kind]}{e.flag && !e.flag_resolved_at && <> · <span className="text-amber-700">flagged</span></>}</div>
+                    <div className="text-slate-500">{eventLabel(e)}{e.flag && !e.flag_resolved_at && <> · <span className="text-amber-700">flagged</span></>}</div>
                   </div>
                   <span className="tabular-nums text-slate-700 whitespace-nowrap">{fmtTime(e.occurred_at, tz)}</span>
                 </li>

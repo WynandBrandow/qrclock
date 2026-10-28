@@ -20,5 +20,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Kiosk API calls and static files don't need the session refresh.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|api/kiosk|.*\\.(?:svg|png|jpg|webmanifest)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|api/kiosk|api/cron|.*\\.(?:svg|png|jpg|webmanifest)$).*)"],
 };

@@ -1,31 +1,31 @@
 import Link from "next/link";
 import { requireViewer } from "@/lib/auth";
 import { db } from "@/lib/supabase/server";
-import { activeEvents, namesById, placesById } from "@/lib/data";
+import { activeEvents, must, namesById, placesById } from "@/lib/data";
 import { buildShifts, FLAG_LABEL, ISSUE_LABEL, KIND_LABEL, type ClockEvent } from "@/lib/shifts";
 import { fmtDateTime, fmtDay, localDate, weekStartOf } from "@/lib/time";
 import { Badge, Empty, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Review" };
 
-const LOOKBACK_DAYS = 35;
+const LOOKBACK_DAYS = 60;
 
 export default async function Review() {
   const v = await requireViewer(["manager", "admin"]);
   const c = v.company, tz = c.timezone, now = new Date();
   const since = new Date(now.getTime() - LOOKBACK_DAYS * 86400_000);
 
-  const [events, names, places, { data: flagged }, { data: scans }] = await Promise.all([
+  const [events, names, places, flagged, scans] = await Promise.all([
     // Fetch two extra days so a shift that started before the window still pairs up.
     activeEvents(c.id, new Date(since.getTime() - 2 * 86400_000), new Date(now.getTime() + 60_000)),
     namesById(c.id),
     placesById(c.id),
     db().from("clock_events").select("id, employee_id, kind, occurred_at, flag")
       .eq("company_id", c.id).eq("status", "active").not("flag", "is", null).is("flag_resolved_at", null)
-      .order("occurred_at", { ascending: false }).limit(200),
+      .order("occurred_at", { ascending: false }).limit(200).then(must),
     db().from("scan_log").select("id, kiosk_id, result, detail, created_at")
       .eq("company_id", c.id).neq("result", "ok").gte("created_at", new Date(now.getTime() - 7 * 86400_000).toISOString())
-      .order("created_at", { ascending: false }).limit(50),
+      .order("created_at", { ascending: false }).limit(50).then(must),
   ]);
 
   const firstDay = localDate(since, tz);
@@ -59,8 +59,8 @@ export default async function Review() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Flagged scans <span className="text-slate-400 font-normal">({flagged?.length ?? 0})</span></h2>
-        {!flagged?.length ? <Empty>No unusual scans to check.</Empty> : (
+        <h2 className="text-lg font-semibold mb-3">Flagged scans <span className="text-slate-400 font-normal">({flagged.length ?? 0})</span></h2>
+        {!flagged.length ? <Empty>No unusual scans to check.</Empty> : (
           <ul className="card divide-y divide-slate-100">
             {flagged.map(e => (
               <li key={e.id}>
@@ -76,8 +76,8 @@ export default async function Review() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Rejected scans, last 7 days <span className="text-slate-400 font-normal">({scans?.length ?? 0})</span></h2>
-        {!scans?.length ? <Empty>No rejected scans.</Empty> : (
+        <h2 className="text-lg font-semibold mb-3">Rejected scans, last 7 days <span className="text-slate-400 font-normal">({scans.length ?? 0})</span></h2>
+        {!scans.length ? <Empty>No rejected scans.</Empty> : (
           <ul className="card divide-y divide-slate-100 text-sm">
             {scans.map(s => (
               <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">

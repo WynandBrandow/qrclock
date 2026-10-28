@@ -29,6 +29,7 @@ export type Database = {
           kiosk_id: string | null
           location_id: string | null
           occurred_at: string
+          paid_break: boolean | null
           replaces_id: string | null
           source: string
           status: string
@@ -47,6 +48,7 @@ export type Database = {
           kiosk_id?: string | null
           location_id?: string | null
           occurred_at: string
+          paid_break?: boolean | null
           replaces_id?: string | null
           source: string
           status?: string
@@ -65,6 +67,7 @@ export type Database = {
           kiosk_id?: string | null
           location_id?: string | null
           occurred_at?: string
+          paid_break?: boolean | null
           replaces_id?: string | null
           source?: string
           status?: string
@@ -128,8 +131,11 @@ export type Database = {
           duplicate_window_seconds: number
           id: string
           long_shift_hours: number
+          meal_break_after_hours: number
+          min_meal_break_minutes: number
           name: string
           record_location: boolean
+          rest_breaks: boolean
           timezone: string
           track_breaks: boolean
           week_start: number
@@ -140,8 +146,11 @@ export type Database = {
           duplicate_window_seconds?: number
           id?: string
           long_shift_hours?: number
+          meal_break_after_hours?: number
+          min_meal_break_minutes?: number
           name: string
           record_location?: boolean
+          rest_breaks?: boolean
           timezone?: string
           track_breaks?: boolean
           week_start?: number
@@ -152,8 +161,11 @@ export type Database = {
           duplicate_window_seconds?: number
           id?: string
           long_shift_hours?: number
+          meal_break_after_hours?: number
+          min_meal_break_minutes?: number
           name?: string
           record_location?: boolean
+          rest_breaks?: boolean
           timezone?: string
           track_breaks?: boolean
           week_start?: number
@@ -166,14 +178,19 @@ export type Database = {
           company_id: string
           created_at: string
           email: string | null
+          employment_type: string | null
           full_name: string
           id: string
+          payroll_code: string | null
           pin_failed_count: number
           pin_hash: string | null
+          pin_lock_count: number
           pin_locked_until: string | null
+          pin_version: number
           qr_issued_at: string
           qr_token: string
           role: string
+          start_date: string | null
           updated_at: string
           user_id: string | null
         }
@@ -182,14 +199,19 @@ export type Database = {
           company_id: string
           created_at?: string
           email?: string | null
+          employment_type?: string | null
           full_name: string
           id?: string
+          payroll_code?: string | null
           pin_failed_count?: number
           pin_hash?: string | null
+          pin_lock_count?: number
           pin_locked_until?: string | null
+          pin_version?: number
           qr_issued_at?: string
           qr_token?: string
           role?: string
+          start_date?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -198,14 +220,19 @@ export type Database = {
           company_id?: string
           created_at?: string
           email?: string | null
+          employment_type?: string | null
           full_name?: string
           id?: string
+          payroll_code?: string | null
           pin_failed_count?: number
           pin_hash?: string | null
+          pin_lock_count?: number
           pin_locked_until?: string | null
+          pin_version?: number
           qr_issued_at?: string
           qr_token?: string
           role?: string
+          start_date?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -228,6 +255,7 @@ export type Database = {
           corrected_at: string
           corrected_by: string
           employee_id: string
+          event_time: string | null
           id: string
           new_event_id: string | null
           original_event_id: string | null
@@ -241,6 +269,7 @@ export type Database = {
           corrected_at?: string
           corrected_by: string
           employee_id: string
+          event_time?: string | null
           id?: string
           new_event_id?: string | null
           original_event_id?: string | null
@@ -254,6 +283,7 @@ export type Database = {
           corrected_at?: string
           corrected_by?: string
           employee_id?: string
+          event_time?: string | null
           id?: string
           new_event_id?: string | null
           original_event_id?: string | null
@@ -300,10 +330,12 @@ export type Database = {
       kiosks: {
         Row: {
           active: boolean
+          client_info: Json | null
           company_id: string
           created_at: string
           device_secret_hash: string | null
           id: string
+          last_heartbeat_at: string | null
           last_seen_at: string | null
           location_id: string | null
           name: string
@@ -313,10 +345,12 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          client_info?: Json | null
           company_id: string
           created_at?: string
           device_secret_hash?: string | null
           id?: string
+          last_heartbeat_at?: string | null
           last_seen_at?: string | null
           location_id?: string | null
           name: string
@@ -326,10 +360,12 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          client_info?: Json | null
           company_id?: string
           created_at?: string
           device_secret_hash?: string | null
           id?: string
+          last_heartbeat_at?: string | null
           last_seen_at?: string | null
           location_id?: string | null
           name?: string
@@ -379,6 +415,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_holidays: {
+        Row: {
+          company_id: string
+          date: string
+          from_time: string
+          id: string
+          name: string
+          to_time: string
+        }
+        Insert: {
+          company_id: string
+          date: string
+          from_time?: string
+          id?: string
+          name: string
+          to_time?: string
+        }
+        Update: {
+          company_id?: string
+          date?: string
+          from_time?: string
+          id?: string
+          name?: string
+          to_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_holidays_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -438,16 +509,22 @@ export type Database = {
           },
         ]
       }
-      weekly_timesheets: {
+      timesheet_approvals: {
         Row: {
           approved_at: string
           approved_by: string
           break_minutes: number
           company_id: string
+          content_hash: string
           employee_id: string
           id: string
+          minutes_by_category: Json
+          period_end: string
+          period_start: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
           shift_count: number
-          week_start: string
           worked_minutes: number
         }
         Insert: {
@@ -455,10 +532,16 @@ export type Database = {
           approved_by: string
           break_minutes: number
           company_id: string
+          content_hash: string
           employee_id: string
           id?: string
+          minutes_by_category?: Json
+          period_end: string
+          period_start: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           shift_count: number
-          week_start: string
           worked_minutes: number
         }
         Update: {
@@ -466,30 +549,43 @@ export type Database = {
           approved_by?: string
           break_minutes?: number
           company_id?: string
+          content_hash?: string
           employee_id?: string
           id?: string
+          minutes_by_category?: Json
+          period_end?: string
+          period_start?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           shift_count?: number
-          week_start?: string
           worked_minutes?: number
         }
         Relationships: [
           {
-            foreignKeyName: "weekly_timesheets_approved_by_fkey"
+            foreignKeyName: "timesheet_approvals_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "weekly_timesheets_company_id_fkey"
+            foreignKeyName: "timesheet_approvals_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "weekly_timesheets_employee_id_fkey"
+            foreignKeyName: "timesheet_approvals_employee_id_fkey"
             columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_approvals_revoked_by_fkey"
+            columns: ["revoked_by"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
@@ -507,9 +603,14 @@ export type Database = {
           p_employee_id: string
           p_kind: string
           p_occurred_at: string
+          p_paid_break?: boolean
           p_reason: string
         }
         Returns: string
+      }
+      backdate_test_events: {
+        Args: { p_employee_id: string; p_seconds: number }
+        Returns: undefined
       }
       correct_event: {
         Args: {
@@ -522,15 +623,31 @@ export type Database = {
         Returns: string
       }
       new_token: { Args: never; Returns: string }
+      pin_attempt: {
+        Args: { p_token: string }
+        Returns: {
+          employee_id: string
+          locked_until: string
+          pin_hash: string
+          pin_version: number
+        }[]
+      }
+      pin_succeeded: { Args: { p_employee_id: string }; Returns: undefined }
+      purge_test_data: {
+        Args: { p_company_id?: string; p_employee_id?: string }
+        Returns: undefined
+      }
       record_punch: {
         Args: {
           p_employee_id: string
           p_kind: string
           p_kiosk_id?: string
+          p_paid_break?: boolean
           p_source: string
         }
         Returns: Json
       }
+      records_unlocked: { Args: never; Returns: boolean }
       resolve_flag: {
         Args: { p_by: string; p_event_id: string; p_note: string }
         Returns: undefined

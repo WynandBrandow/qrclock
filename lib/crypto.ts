@@ -1,5 +1,8 @@
 import "server-only";
-import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scrypt, scryptSync, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
+
+const scryptAsync = promisify(scrypt) as (pin: string, salt: string, len: number) => Promise<Buffer>;
 
 const secret = () => {
   const s = process.env.APP_SECRET;
@@ -30,10 +33,11 @@ export function hashPin(pin: string) {
   return `scrypt:${salt}:${scryptSync(pin, salt, 32).toString("base64url")}`;
 }
 
-export function checkPin(pin: string, stored: string | null) {
+/** Async, so wrong guesses don't block the server while scrypt runs. */
+export async function checkPin(pin: string, stored: string | null) {
   if (!stored) return false;
   const [scheme, salt, hash] = stored.split(":");
   if (scheme !== "scrypt" || !salt || !hash) return false;
-  const a = scryptSync(pin, salt, 32), b = Buffer.from(hash, "base64url");
+  const a = await scryptAsync(pin, salt, 32), b = Buffer.from(hash, "base64url");
   return a.length === b.length && timingSafeEqual(a, b);
 }

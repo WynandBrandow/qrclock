@@ -1,7 +1,8 @@
 import { requireViewer } from "@/lib/auth";
-import { currentWeekStart, lastEvent, loadWeek, pickWeek } from "@/lib/data";
-import { currentState } from "@/lib/shifts";
-import { addDays, fmtDateTime, fmtDay, fmtMinutes } from "@/lib/time";
+import { currentWeekStart, lastEvent, loadWeek, must, namesById, pickWeek } from "@/lib/data";
+import { db } from "@/lib/supabase/server";
+import { currentState, KIND_LABEL, type EventKind } from "@/lib/shifts";
+import { addDays, fmtDateTime, fmtDay, fmtMinutes, weekBounds } from "@/lib/time";
 import ShiftTable, { TotalsStrip } from "@/components/ShiftTable";
 import { Badge, Notice, PageHeader, WeekPicker } from "@/components/ui";
 
@@ -11,7 +12,14 @@ export default async function MyHours({ searchParams }: PageProps<"/me">) {
   const v = await requireViewer();
   const c = v.company;
   const week = pickWeek(c, (await searchParams).week);
-  const [[w], last] = await Promise.all([loadWeek(c, week, v.employee.id), lastEvent(v.employee.id)]);
+  const { from, to } = weekBounds(week, c.timezone);
+  const [[w], last, changes, names] = await Promise.all([
+    loadWeek(c, week, v.employee.id), lastEvent(v.employee.id),
+    db().from("event_corrections").select("id, action, reason, corrected_at, corrected_by, before, after")
+      .eq("employee_id", v.employee.id).gte("event_time", from.toISOString()).lt("event_time", to.toISOString())
+      .order("corrected_at", { ascending: false }).then(must),
+    namesById(c.id),
+  ]);
   const { state } = currentState(last, c);
   const t = w?.totals;
 
@@ -24,15 +32,36 @@ export default async function MyHours({ searchParams }: PageProps<"/me">) {
       />
       {v.via === "pin" && <Notice>You&apos;re signed in with your card on this device. Sign out when you&apos;re done.</Notice>}
       {w?.approval && (
-        <Notice>
+        <Notice tone={w.approved ? "teal" : "amber"}>
           Approved: {fmtMinutes(w.approval.worked_minutes)} on {fmtDateTime(w.approval.approved_at, c.timezone)}.
-          {w.approval.worked_minutes !== t?.workedMinutes && " Hours have changed since then; your manager will re-approve."}
+          {!w.approved && " Hours have changed since then; your manager will check and approve again."}
         </Notice>
       )}
-      <TotalsStrip worked={t?.workedMinutes ?? 0} breaks={t?.breakMinutes ?? 0} shifts={t?.shiftCount ?? 0} inProgress={t?.inProgressMinutes ?? 0} breaksPaid={c.breaks_paid} />
+      <TotalsStrip worked={t?.workedMinutes ?? 0} breaks={t?.breakMinutes ?? 0} unpaidBreaks={t?.unpaidBreakMinutes ?? 0} shifts={t?.shiftCount ?? 0} inProgress={t?.inProgressMinutes ?? 0} />
       <ShiftTable shifts={w?.shifts ?? []} tz={c.timezone} />
       {!!t?.issueCount && (
         <p className="mt-4 text-sm text-slate-600"><Badge tone="red">Needs a fix</Badge> Shifts marked like this are missing a scan. Your manager will correct them.</p>
+      )}
+      {changes.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold mb-3">Changes to your times this week</h2>
+          <ol className="card divide-y divide-slate-100 text-sm">
+            {changes.map(h => {
+              const b = h.before as { kind?: EventKind; occurred_at?: string } | null, a = h.after as { kind?: EventKind; occurred_at?: string } | null;
+              const what = (x: typeof a) => (x?.kind && x.occurred_at ? `${KIND_LABEL[x.kind].toLowerCase()} ${fmtDateTime(x.occurred_at, c.timezone)}` : "a scan");
+              return (
+                <li key={h.id} className="p-4">
+                  <div className="font-medium text-slate-800">
+                    {h.action === "edit" ? `Changed ${what(b)} to ${what(a)}` : h.action === "add" ? `Added ${what(a)}` : h.action === "void" ? `Removed ${what(b)}` : "Checked a flagged scan"}
+                  </div>
+                  <div className="text-slate-600 mt-0.5">&ldquo;{h.reason}&rdquo;</div>
+                  <div className="text-xs text-slate-600 mt-1">{names.get(h.corrected_by) ?? "Your manager"} · {fmtDateTime(h.corrected_at, c.timezone)}</div>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="text-xs text-slate-600 mt-2">If something here looks wrong, talk to your manager.</p>
+        </section>
       )}
     </div>
   );

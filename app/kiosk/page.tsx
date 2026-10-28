@@ -5,7 +5,7 @@ import Kiosk from "./Kiosk";
 export const metadata = { title: "Kiosk" };
 
 const ERRORS: Record<string, string> = {
-  invalid: "That pairing link isn't valid. Create a new one under Setup → Kiosks.",
+  invalid: "That pairing link isn't valid any more: it was already used, or it expired. Create a new one under Setup → Kiosks.",
   expired: "That pairing link has expired. Create a new one under Setup → Kiosks.",
   failed: "Pairing didn't complete. Try the link again.",
 };
@@ -29,5 +29,5 @@ export default async function KioskPage({ searchParams }: PageProps<"/kiosk">) {
       </main>
     );
   }
-  return <Kiosk company={k.company.name} kioskName={k.kiosk.name} tz={k.company.timezone} />;
+  return <Kiosk company={k.company.name} kioskName={k.kiosk.name} tz={k.company.timezone} restBreaks={k.company.track_breaks && k.company.rest_breaks} />;
 }
