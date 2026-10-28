@@ -51,7 +51,9 @@ const watch = (page, label) => {
   page.on("pageerror", e => errors.push(`${label}: ${e.message}`));
   page.on("console", m => { if (m.type() === "error" && !/camera|NotFoundError|Requested device|getUserMedia/i.test(m.text())
     // The kiosk steps send rejected scans on purpose (409 repeat, 404 unknown) and check the status themselves.
-    && !(label === "kiosk" && /Failed to load resource: .* (404|409)/.test(m.text()))) errors.push(`${label}: ${m.text()}`); });
+    && !(label === "kiosk" && /Failed to load resource: .* (404|409)/.test(m.text()))
+    // The phone step checks a staff session is refused the CSV export (403) on purpose.
+    && !(label === "phone" && /Failed to load resource: .* 403/.test(m.text()))) errors.push(`${label}: ${m.text()}`); });
 };
 let n = 0;
 const step = async (name, fn) => { await fn(); n++; console.log("✔", name); };
@@ -230,9 +232,10 @@ try {
     await admin.goto(`${base}/timesheets`);
     await admin.getByRole("link", { name: WORKER }).waitFor();
     await shot(admin, "timesheets-1280");
-    const res = await admin.context().request.get(`${base}/api/export`);
-    assert.equal(res.status(), 200);
-    assert.match(await res.text(), /TEST Worker e2e.*Approved/s);
+    // Fetched from inside the page, so it uses the browser's DNS (and --public-dns) and cookies.
+    const res = await admin.evaluate(async () => { const r = await fetch("/api/export"); return { status: r.status, text: await r.text() }; });
+    assert.equal(res.status, 200);
+    assert.match(res.text, /TEST Worker e2e.*Approved/s);
   });
 
   await step("phone: scanning the card asks for the PIN; wrong PIN refused; right PIN shows own hours only", async () => {
@@ -254,7 +257,7 @@ try {
     // Pages stream behind a loading screen, so the redirect can land just after the first bytes.
     await phone.waitForURL(u => new URL(u).pathname === "/me", { timeout: 10000 });
     assert.equal(await phone.getByRole("heading", { name: "Today" }).count(), 0, "a card session must never see the manager page");
-    assert.equal((await phone.context().request.get(`${base}/api/export`)).status(), 403);
+    assert.equal(await phone.evaluate(async () => (await fetch("/api/export")).status), 403);
     await phone.context().close();
   });
 
