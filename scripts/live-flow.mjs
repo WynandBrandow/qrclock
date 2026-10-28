@@ -16,7 +16,7 @@ const email = arg("email", "wb@ccov.co.za");
 const out = arg("out", join(tmpdir(), "qrclock-live"));
 mkdirSync(out, { recursive: true });
 
-const env = Object.fromEntries(readFileSync(".env.local", "utf8").split(/\r?\n/).filter(l => /^[A-Z0-9_]+=/.test(l)).map(l => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]));
+const env = Object.fromEntries(readFileSync(".env.local", "utf8").split(/\r?\n/).filter(l => /^[A-Z0-9_]+=/.test(l)).map(l => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1).trim().replace(/^"|"$/g, "")]));
 const sbUrl = env.NEXT_PUBLIC_SUPABASE_URL, service = env.SUPABASE_SERVICE_ROLE_KEY;
 const db = createClient(sbUrl, service, { auth: { persistSession: false } });
 const KIOSK = "TEST kiosk e2e", WORKER = "TEST Worker e2e", PIN = "4826";
@@ -106,11 +106,11 @@ try {
     let r = await scan({ code: card });
     assert.deepEqual(r.actions, ["clock_in"]);
     assert.equal(r.name, "TEST");
-    r = await scan({ code: card, kind: "clock_in" });
+    r = await scan({ code: card, action: "clock_in" });
     assert.equal(r.ok, true);
     r = await scan({ code: card });
     assert.equal(r.duplicate, true);
-    r = await scan({ code: card, kind: "clock_out" });
+    r = await scan({ code: card, action: "clock_out" });
     assert.equal(r.status, 409);
   });
 
@@ -131,7 +131,7 @@ try {
   const { error: backErr } = await db.rpc("backdate_test_events", { p_employee_id: employeeId, p_seconds: 120 });
   assert.ifError(backErr);
 
-  await step("kiosk screen: a USB scanner types the code, the employee taps Clock out", async () => {
+  await step("kiosk screen: a USB scanner types the code; a second scan can't confirm it; the employee taps Clock out", async () => {
     await kiosk.reload();
     await kiosk.getByText(KIOSK).waitFor();
     await kiosk.keyboard.type(card, { delay: 5 });
@@ -139,6 +139,14 @@ try {
     await kiosk.getByRole("heading", { name: "Hi TEST" }).waitFor();
     await kiosk.getByRole("button", { name: "Start break" }).waitFor();
     await shot(kiosk, "kiosk-choose-768");
+    // The audit's top bug: a second card scanned now (typed + Enter by a USB scanner) must not
+    // press "Clock out" for the person on screen.
+    await kiosk.keyboard.type(`${base}/q/someoneElsesCardToken12`, { delay: 5 });
+    await kiosk.keyboard.press("Enter");
+    await kiosk.waitForTimeout(1500);
+    await kiosk.getByRole("heading", { name: "Hi TEST" }).waitFor();
+    const { count: still } = await db.from("clock_events").select("id", { count: "exact", head: true }).eq("employee_id", employeeId).eq("kind", "clock_out");
+    assert.equal(still, 0, "a scanner Enter must not confirm the previous person's action");
     await kiosk.getByRole("button", { name: "Clock out" }).click();
     await kiosk.getByRole("heading", { name: "Clocked out" }).waitFor();
     await shot(kiosk, "kiosk-done-768");

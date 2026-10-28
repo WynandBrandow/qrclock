@@ -30,7 +30,7 @@ export default async function ExportPage({ searchParams }: PageProps<"/timesheet
         <section className="card p-5">
           <h2 className="font-semibold">Summary</h2>
           <p className="text-sm text-slate-600 mt-1 mb-4">One row per employee: paid hours split into weekday, Saturday, Sunday and public holiday, for entering into payroll.</p>
-          <a className="btn-primary" href={href("summary")} aria-disabled={!approved}>Download summary (CSV)</a>
+          <a className="btn-primary" href={href("summary")}>Download summary (CSV)</a>
         </section>
         <section className="card p-5">
           <h2 className="font-semibold">Shift detail</h2>

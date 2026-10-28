@@ -20,16 +20,34 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 - Sign-in: email magic link (`/login`), or card + PIN on a phone (`/q/<token>`, 12 h cookie, treated as role `employee` only).
 - Kiosk devices: paired once via a one-time link (Setup → Kiosks); the device keeps an httpOnly secret cookie (`qc_kiosk`).
 
+## Records, approvals, backups
+
+- Time records are permanent: triggers block deleting events/corrections/approvals and editing event times. Only
+  `purge_test_data` / `backdate_test_events` (TEST-named data only) can bypass them, for the test scripts.
+- Approvals (`timesheet_approvals`) are append-only with a content hash of the week's events; an approved week is
+  locked in the actions until reopened with a reason. Managers can't change/approve their own or an admin's hours.
+- Daily job: pg_cron `qrclock-daily` (02:30 AEST) in QR Clock's own DB → `public.call_daily_job()` (pg_net, secret in
+  Vault `qrclock_cron_secret` = Vercel `CRON_SECRET`) → `/api/cron/daily`: keep-alive, encrypted backup to the
+  private Vercel Blob store `qrclock-backups` (`backups/<UTC date>.qcb`; 90 days daily, 8 years monthly), scan_log
+  pruned after 90 days. Restore: `vercel blob get backups/<date>.qcb --access private --rw-token <BLOB_READ_WRITE_TOKEN>`,
+  then `npm run backup:open -- <file>` (needs `BACKUP_KEY` from .env.local; keep a copy of that key somewhere safe).
+- Never use Allegra's database, cron or keys for anything here (Mathys, 29 Oct 2026).
+
 ## Commands
 
 - `npm test`: shift/time unit tests. `npm run test:db`: database rules against the real project (throwaway company, cleaned up).
 - `npm run verify:live`: end-to-end on the live site as Mathys (minted session): kiosk pairing, scans, correction, approval, CSV, card + PIN. Creates TEST data and deletes it. Run after every deploy.
 - `npm run seed -- "<Business>" "<Admin name>" <email>`: first company + admin.
+- Scripts read `.env.local` through `scripts/env.mts`, which wins over the shell: this PC has Eternal Echoes' Supabase keys set system-wide.
 - After schema changes: `npx supabase gen types typescript --linked --schema public > lib/supabase/types.ts`.
 
 ## Session log
 
 - 28 Oct 2026: project created; schema, kiosk, timesheets, review, setup, CSV export; seeded "Allegra Hervey Bay" with Mathys as admin. Live at qrclock.vercel.app; verify:live 10/10.
+- 29 Oct 2026: GitHub connected (push to main deploys). Audit with 5 agents → Phase 1+2 built: public sign-up closed,
+  scanner-Enter kiosk bug, PIN lockout, permanent records, locked approvals, midnight split + holiday/weekend hours,
+  rest vs meal breaks, payroll export, kiosk health, daily backup. test 19/19, test:db 17/17, verify:live 10/10.
+  Resend: domain ccov.co.za added; Xneelo publishes the two CNAMEs with the zone appended (support ticket sent).
   Magic-link email uses Supabase's built-in sender, which only delivers to the org's own members and ~2 emails/hour: add custom SMTP (Supabase → Auth → SMTP) before inviting staff by email.
 
 <!-- BEGIN:nextjs-agent-rules -->
