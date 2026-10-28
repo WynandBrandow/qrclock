@@ -37,7 +37,15 @@ const cname = `sb-${new URL(sbUrl).hostname.split(".")[0]}-auth-token`, host = n
 const parts = value.match(/.{1,3180}/g);
 const adminCookies = parts.length === 1 ? [{ name: cname, value, domain: host, path: "/" }] : parts.map((c, i) => ({ name: `${cname}.${i}`, value: c, domain: host, path: "/" }));
 
-const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--headless=new"] });
+// --public-dns: resolve the site through Google's DNS (a router can cache a new domain as missing for a day).
+const resolverRules = [];
+if (process.argv.includes("--public-dns")) {
+  const { Resolver } = await import("node:dns/promises");
+  const r = new Resolver(); r.setServers(["8.8.8.8", "1.1.1.1"]);
+  const host = new URL(base).hostname;
+  resolverRules.push(`--host-resolver-rules=MAP ${host} ${(await r.resolve4(host))[0]}`);
+}
+const browser = await chromium.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--headless=new", ...resolverRules] });
 const errors = [];
 const watch = (page, label) => {
   page.on("pageerror", e => errors.push(`${label}: ${e.message}`));
@@ -125,7 +133,7 @@ try {
     writeFileSync(video, qrVideo(card));
     const camBrowser = await chromium.launch({
       executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true,
-      args: ["--headless=new", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", `--use-file-for-fake-video-capture=${video}`],
+      args: ["--headless=new", ...resolverRules, "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", `--use-file-for-fake-video-capture=${video}`],
     });
     try {
       const ctx = await camBrowser.newContext({ viewport: { width: 768, height: 1024 }, permissions: ["camera"] });
