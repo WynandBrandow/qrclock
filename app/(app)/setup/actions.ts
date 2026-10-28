@@ -47,9 +47,11 @@ export async function saveEmployee(_: FormResult, f: FormData): Promise<FormResu
     const payroll_code = str(f, "payroll_code") || null;
     const employment_type = str(f, "employment_type") || null;
     const start_date = str(f, "start_date") || null;
+    const phone = str(f, "phone") || null;
+    if (phone && !/^[+\d][\d\s()-]{5,24}$/.test(phone)) return { ok: false, error: "That phone number doesn't look right." };
     if (employment_type && !["full_time", "part_time", "casual"].includes(employment_type)) return { ok: false, error: "Pick an employment type." };
     if (start_date && !/^\d{4}-\d{2}-\d{2}$/.test(start_date)) return { ok: false, error: "Enter a valid start date." };
-    const details = { payroll_code, employment_type, start_date };
+    const details = { payroll_code, employment_type, start_date, phone };
 
     if (id) {
       await own(v, "employees", id);

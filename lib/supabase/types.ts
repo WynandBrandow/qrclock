@@ -212,6 +212,7 @@ export type Database = {
           full_name: string
           id: string
           payroll_code: string | null
+          phone: string | null
           pin_failed_count: number
           pin_hash: string | null
           pin_lock_count: number
@@ -233,6 +234,7 @@ export type Database = {
           full_name: string
           id?: string
           payroll_code?: string | null
+          phone?: string | null
           pin_failed_count?: number
           pin_hash?: string | null
           pin_lock_count?: number
@@ -254,6 +256,7 @@ export type Database = {
           full_name?: string
           id?: string
           payroll_code?: string | null
+          phone?: string | null
           pin_failed_count?: number
           pin_hash?: string | null
           pin_lock_count?: number

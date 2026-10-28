@@ -31,7 +31,10 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
           <Form action={saveEmployee} submit="Save">
             <input type="hidden" name="id" value={e.id} />
             <div><label className="label" htmlFor="full_name">Full name</label><input id="full_name" name="full_name" className="input" defaultValue={e.full_name} required /></div>
-            <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" className="input" defaultValue={e.email ?? ""} /></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" className="input" defaultValue={e.email ?? ""} /></div>
+              <div><label className="label" htmlFor="phone">Phone</label><input id="phone" name="phone" type="tel" autoComplete="tel" className="input" defaultValue={e.phone ?? ""} /></div>
+            </div>
             <RoleField value={e.role} />
             <div className="grid gap-3 sm:grid-cols-3">
               <div>

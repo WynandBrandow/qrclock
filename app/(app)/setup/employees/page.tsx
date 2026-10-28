@@ -65,9 +65,15 @@ export default async function Employees() {
         <h2 className="font-semibold mb-4">Add an employee</h2>
         <Form action={saveEmployee} submit="Add employee" reset linkLabel="Open their page to set a PIN or print their card →">
           <div><label className="label" htmlFor="full_name">Full name</label><input id="full_name" name="full_name" className="input" required /></div>
-          <div>
-            <label className="label" htmlFor="email">Email <span className="font-normal text-slate-500">(optional for employees)</span></label>
-            <input id="email" name="email" type="email" className="input" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="email">Email <span className="font-normal text-slate-500">(optional for employees)</span></label>
+              <input id="email" name="email" type="email" className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="phone">Phone <span className="font-normal text-slate-500">(optional)</span></label>
+              <input id="phone" name="phone" type="tel" autoComplete="tel" className="input" />
+            </div>
           </div>
           <RoleField />
         </Form>

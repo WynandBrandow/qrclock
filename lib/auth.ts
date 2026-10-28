@@ -24,6 +24,7 @@ export type Employee = {
   payroll_code: string | null;
   employment_type: string | null;
   start_date: string | null;
+  phone: string | null;
   active: boolean;
 };
 
