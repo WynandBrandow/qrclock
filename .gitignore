@@ -46,3 +46,6 @@ supabase/.branches/
 
 .vercel
 .env*
+
+# Claude Code personal settings for this project
+.claude/settings.local.json
