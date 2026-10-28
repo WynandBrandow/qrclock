@@ -14,14 +14,16 @@ export async function sendMagicLink(_: LoginState, form: FormData): Promise<Logi
   if (emp) {
     const h = await headers();
     const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
+    // Public sign-up is off in Supabase, so the login is created here, only for real employees.
+    // "Already registered" is the normal case after the first sign-in.
+    const { error: createError } = await db().auth.admin.createUser({ email, email_confirm: true });
+    if (createError && createError.code !== "email_exists") console.error("create auth user failed", createError.message);
     const supa = await authClient();
     const { error } = await supa.auth.signInWithOtp({
-      email, options: { emailRedirectTo: `${origin}/auth/callback`, shouldCreateUser: true },
+      email, options: { emailRedirectTo: `${origin}/auth/callback`, shouldCreateUser: false },
     });
-    if (error) {
-      console.error("magic link failed", error.message);
-      return { error: error.status === 429 ? "Too many sign-in emails just now. Wait a minute and try again." : "We couldn't send the email. Try again shortly.", email };
-    }
+    // Failures (including rate limits) are only logged: a different reply would reveal who is on staff.
+    if (error) console.error("magic link failed", error.status, error.message);
   }
   return { sent: true, email };
 }

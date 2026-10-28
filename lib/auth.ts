@@ -50,7 +50,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 
   if (user) {
     let { data: emp } = await db().from("employees").select("*").eq("user_id", user.id).maybeSingle<Employee>();
-    if (!emp && user.email) {
+    if (!emp && user.email && user.email_confirmed_at) {
       // First sign-in: link the auth account to the employee with this email.
       const { data: byEmail } = await db().from("employees").select("*")
         .eq("email", user.email.toLowerCase()).is("user_id", null).eq("active", true).limit(1).maybeSingle<Employee>();
