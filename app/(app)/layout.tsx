@@ -24,7 +24,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                 <div className="text-xs text-slate-500">{v.via === "pin" ? "Signed in with card" : ROLE_LABEL[v.role]}</div>
               </div>
               <form action="/signout" method="post">
-                <button className="btn-secondary px-3 py-1.5 text-xs">Sign out</button>
+                <button className="btn-secondary px-3 py-1.5 text-xs whitespace-nowrap">Sign out</button>
               </form>
             </div>
           </div>
