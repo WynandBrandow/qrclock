@@ -19,7 +19,10 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 - **The menu lives in `lib/nav.ts`; never add a menu item anywhere else** (Sidebar ≥1024 px, sliding MobileNav below).
 - Sign-in: email magic link (`/login`; the email template in supabase/templates links to `/auth/confirm` with a
   token_hash, which shows a Continue button first, so it works on any device and email scanners can't use it up), or card + PIN on a phone (`/q/<token>`, 12 h cookie, treated as role `employee` only).
-- Kiosk devices: paired once via a one-time link (Setup → Kiosks); the device keeps an httpOnly secret cookie (`qc_kiosk`).
+- Phone clocking (on for Aramex Maryborough, record-and-flag): staff scan the location's QR poster (`/c/<qr_token>`),
+  signed in on their own phone (email, or card + PIN with a 120-day "remember"); the phone shares a position once per tap;
+  only `distance_m` is stored; far/unknown = flag `away_from_site`/`no_location` (or refused if `phone_require_location`).
+- Kiosk devices (optional): paired once via a one-time link (Setup → Kiosks); the device keeps an httpOnly secret cookie (`qc_kiosk`).
 
 ## Records, approvals, backups
 
@@ -45,6 +48,12 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 - Scripts read `.env.local` through `scripts/env.mts`, which wins over the shell and refuses any other project's file:
   this PC has Eternal Echoes' Supabase keys set system-wide (that's fine), so a script must never fall back to them.
 - After schema changes: `npx supabase gen types typescript --linked --schema public > lib/supabase/types.ts`.
+
+## Docs for people
+
+- Administrator's manual (Morne): https://claude.ai/artifact/NZsCJ37jPo1uHMq1jxGDme
+- Staff Quick Start: https://claude.ai/artifact/HeGR77NzrXqErFiNP9CMdG
+  Update both when behaviour staff or admins see changes.
 
 ## Not yet switched on
 
