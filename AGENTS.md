@@ -31,14 +31,16 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
   private Vercel Blob store `qrclock-backups` (`backups/<UTC date>.qcb`; 90 days daily, 8 years monthly), scan_log
   pruned after 90 days. Restore: `vercel blob get backups/<date>.qcb --access private --rw-token <BLOB_READ_WRITE_TOKEN>`,
   then `npm run backup:open -- <file>` (needs `BACKUP_KEY` from .env.local; keep a copy of that key somewhere safe).
-- Never use Allegra's database, cron or keys for anything here (Mathys, 29 Oct 2026).
+- Stay inside this project: only write to QR Clock's own repo, Supabase project (vubrnyoecvtkfrlwvwuv), Vercel project
+  and Blob store. Other projects' keys on this PC may be read but never used to change anything (Mathys, 29 Oct 2026).
 
 ## Commands
 
 - `npm test`: shift/time unit tests. `npm run test:db`: database rules against the real project (throwaway company, cleaned up).
 - `npm run verify:live`: end-to-end on the live site as Mathys (minted session): kiosk pairing, scans, correction, approval, CSV, card + PIN. Creates TEST data and deletes it. Run after every deploy.
 - `npm run seed -- "<Business>" "<Admin name>" <email>`: first company + admin.
-- Scripts read `.env.local` through `scripts/env.mts`, which wins over the shell: this PC has Eternal Echoes' Supabase keys set system-wide.
+- Scripts read `.env.local` through `scripts/env.mts`, which wins over the shell and refuses any other project's file:
+  this PC has Eternal Echoes' Supabase keys set system-wide (that's fine), so a script must never fall back to them.
 - After schema changes: `npx supabase gen types typescript --linked --schema public > lib/supabase/types.ts`.
 
 ## Session log
