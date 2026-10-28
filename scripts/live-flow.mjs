@@ -40,7 +40,9 @@ const browser = await chromium.launch({ executablePath: "C:/Program Files/Google
 const errors = [];
 const watch = (page, label) => {
   page.on("pageerror", e => errors.push(`${label}: ${e.message}`));
-  page.on("console", m => { if (m.type() === "error" && !/camera|NotFoundError|Requested device|getUserMedia/i.test(m.text())) errors.push(`${label}: ${m.text()}`); });
+  page.on("console", m => { if (m.type() === "error" && !/camera|NotFoundError|Requested device|getUserMedia/i.test(m.text())
+    // The kiosk steps send rejected scans on purpose (409 repeat, 404 unknown) and check the status themselves.
+    && !(label === "kiosk" && /Failed to load resource: .* (404|409)/.test(m.text()))) errors.push(`${label}: ${m.text()}`); });
 };
 let n = 0;
 const step = async (name, fn) => { await fn(); n++; console.log("✔", name); };

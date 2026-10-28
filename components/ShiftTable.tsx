@@ -10,10 +10,10 @@ export default function ShiftTable({ shifts, tz }: { shifts: Shift[]; tz: string
       <table className="w-full text-sm">
         <thead className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200">
           <tr>
-            <th className="px-4 py-3 font-medium">Day</th>
+            <th className="px-3 sm:px-4 py-3 font-medium">Day</th>
             <th className="px-4 py-3 font-medium">In</th>
             <th className="px-4 py-3 font-medium">Out</th>
-            <th className="px-4 py-3 font-medium">Breaks</th>
+            <th className="px-4 py-3 font-medium hidden sm:table-cell">Breaks</th>
             <th className="px-4 py-3 font-medium text-right">Worked</th>
           </tr>
         </thead>
@@ -25,7 +25,7 @@ export default function ShiftTable({ shifts, tz }: { shifts: Shift[]; tz: string
               <td className="px-4 py-3 whitespace-nowrap">
                 {sh.end ? fmtTime(sh.end.occurred_at, tz) : sh.inProgress ? <Badge tone="teal">On shift</Badge> : <span className="text-red-700">missing</span>}
               </td>
-              <td className="px-4 py-3 text-slate-600">
+              <td className="px-4 py-3 text-slate-600 hidden sm:table-cell">
                 {sh.breaks.length === 0 ? "—" : sh.breaks.map(b => (
                   <div key={b.start.id} className="whitespace-nowrap">
                     {fmtTime(b.start.occurred_at, tz)}–{b.end ? fmtTime(b.end.occurred_at, tz) : sh.inProgress ? "now" : "?"}
@@ -35,6 +35,7 @@ export default function ShiftTable({ shifts, tz }: { shifts: Shift[]; tz: string
               </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">
                 <div className="font-medium tabular-nums">{sh.start && (sh.end || sh.inProgress) ? fmtMinutes(sh.workedMinutes) : "—"}</div>
+                {sh.breakMinutes > 0 && <div className="text-xs text-slate-400 sm:hidden">{fmtMinutes(sh.breakMinutes)} break</div>}
                 <div className="flex flex-wrap justify-end gap-1 mt-1">
                   {sh.issues.map(i => <Badge key={i} tone="red">{ISSUE_LABEL[i]}</Badge>)}
                 </div>
