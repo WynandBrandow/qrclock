@@ -118,7 +118,7 @@ export default function Kiosk({ company, kioskName, tz, restBreaks }: { company:
     lastCode.current = stamp(code);
     setView({ t: "checking" });
     const { status, data } = await api("/api/kiosk/scan", { code });
-    if (!data) return show({ t: "message", tone: "error", title: "No connection", body: "Nothing was saved. Use your phone (card + PIN) or tell your manager." }, MESSAGE_TIME);
+    if (!data) return show({ t: "message", tone: "error", title: "No connection", body: "Nothing was saved. Tell your manager the time, or try again shortly." }, MESSAGE_TIME);
     if (status === 401) return show({ t: "message", tone: "error", title: "Kiosk not paired", body: "An administrator needs to pair this device again under Setup → Kiosks." }, 10_000);
     if (data.error === "unknown") return show({ t: "message", tone: "error", title: "Card not recognised", body: "This QR code isn't registered. Ask your manager for a new card." }, MESSAGE_TIME);
     if (data.error === "inactive") return show({ t: "message", tone: "error", title: `Sorry ${data.name}`, body: "This card is no longer active. Please see your manager." }, MESSAGE_TIME);
@@ -140,7 +140,7 @@ export default function Kiosk({ company, kioskName, tz, restBreaks }: { company:
     if (timer.current) clearTimeout(timer.current);
     setView({ t: "saving", name });
     const { status, data } = await api("/api/kiosk/scan", { code, action });
-    if (!data) return show({ t: "message", tone: "error", title: "No connection", body: "Not saved. Use your phone (card + PIN) or tell your manager." }, MESSAGE_TIME);
+    if (!data) return show({ t: "message", tone: "error", title: "No connection", body: "Not saved. Tell your manager the time, or try again shortly." }, MESSAGE_TIME);
     if (status === 200 && data.ok) {
       lastCode.current = stamp(code);
       beep("ok");
@@ -287,7 +287,7 @@ export default function Kiosk({ company, kioskName, tz, restBreaks }: { company:
     <main className="fixed inset-0 bg-slate-950 text-white flex flex-col select-none pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {offline && (
         <div role="alert" className="bg-rose-600 text-white text-center px-4 py-2 font-medium">
-          No internet: scans are not being saved. Use your phone (card + PIN) or tell your manager.
+          No internet: scans are not being saved. Tell your manager the time you arrived or left.
         </div>
       )}
       <header className="flex items-center justify-between px-6 py-4">
