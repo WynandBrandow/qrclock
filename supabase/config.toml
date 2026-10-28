@@ -235,14 +235,17 @@ otp_length = 6
 otp_expiry = 3600
 
 # Use a production-ready SMTP server
+# Resend SMTP for magic-link emails. Switch on once the sending domain is verified in Resend:
+# uncomment, set admin_email to an address on that domain, then
+#   RESEND_API_KEY=<key from .env.local> npx supabase config push
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "noreply@<verified domain>"
+# sender_name = "QR Clock"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
