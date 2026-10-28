@@ -111,7 +111,11 @@ export default async function EmployeeTimesheet({ params, searchParams }: PagePr
                   {flagged && <Badge tone="amber">{FLAG_LABEL[e.flag!] ?? e.flag}</Badge>}
                   {e.flag && e.flag_resolved_at && <Badge>Checked</Badge>}
                 </div>
-                {where && <div className="text-xs text-slate-600 mt-1">{where}</div>}
+                {(where || e.source === "phone") && (
+                  <div className="text-xs text-slate-600 mt-1">
+                    {[e.source === "phone" ? "Phone" : null, where, e.distance_m != null ? `${e.distance_m < 1000 ? `${e.distance_m} m` : `${(e.distance_m / 1000).toFixed(1)} km`} from the depot` : null].filter(Boolean).join(" · ")}
+                  </div>
+                )}
               </div>
               {hands && <EventActions id={e.id} kind={e.kind} flagged={flagged} locked={locked}
                 date={localDate(new Date(e.occurred_at), tz)} time={localTime(new Date(e.occurred_at), tz)} />}

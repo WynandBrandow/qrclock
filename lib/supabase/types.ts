@@ -46,6 +46,7 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          distance_m: number | null
           employee_id: string
           flag: string | null
           flag_note: string | null
@@ -65,6 +66,7 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          distance_m?: number | null
           employee_id: string
           flag?: string | null
           flag_note?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          distance_m?: number | null
           employee_id?: string
           flag?: string | null
           flag_note?: string | null
@@ -162,6 +165,8 @@ export type Database = {
           meal_break_after_hours: number
           min_meal_break_minutes: number
           name: string
+          phone_clocking: boolean
+          phone_require_location: boolean
           record_location: boolean
           rest_breaks: boolean
           timezone: string
@@ -178,6 +183,8 @@ export type Database = {
           meal_break_after_hours?: number
           min_meal_break_minutes?: number
           name: string
+          phone_clocking?: boolean
+          phone_require_location?: boolean
           record_location?: boolean
           rest_breaks?: boolean
           timezone?: string
@@ -194,6 +201,8 @@ export type Database = {
           meal_break_after_hours?: number
           min_meal_break_minutes?: number
           name?: string
+          phone_clocking?: boolean
+          phone_require_location?: boolean
           record_location?: boolean
           rest_breaks?: boolean
           timezone?: string
@@ -429,21 +438,33 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
           name: string
+          qr_token: string
+          radius_m: number
         }
         Insert: {
           active?: boolean
           company_id: string
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name: string
+          qr_token?: string
+          radius_m?: number
         }
         Update: {
           active?: boolean
           company_id?: string
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name?: string
+          qr_token?: string
+          radius_m?: number
         }
         Relationships: [
           {
@@ -673,9 +694,12 @@ export type Database = {
       }
       record_punch: {
         Args: {
+          p_distance_m?: number
           p_employee_id: string
+          p_extra_flag?: string
           p_kind: string
           p_kiosk_id?: string
+          p_location_id?: string
           p_paid_break?: boolean
           p_source: string
         }

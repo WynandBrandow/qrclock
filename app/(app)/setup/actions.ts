@@ -110,9 +110,14 @@ export async function saveLocation(_: FormResult, f: FormData): Promise<FormResu
     const v = await admin();
     const id = str(f, "id"), name = str(f, "name");
     if (!name) return { ok: false, error: "Enter a name." };
+    const latS = str(f, "latitude"), lngS = str(f, "longitude"), radiusS = str(f, "radius_m");
+    const latitude = latS ? Number(latS) : null, longitude = lngS ? Number(lngS) : null, radius_m = radiusS ? Number(radiusS) : 200;
+    if ((latitude == null) !== (longitude == null)) return { ok: false, error: "Enter both latitude and longitude, or neither." };
+    if (latitude != null && !(latitude >= -90 && latitude <= 90 && longitude! >= -180 && longitude! <= 180)) return { ok: false, error: "Those coordinates don't look right." };
+    if (!(radius_m >= 25 && radius_m <= 5000)) return { ok: false, error: "The radius must be 25 to 5000 metres." };
     if (id) {
       await own(v, "locations", id);
-      const { error } = await db().from("locations").update({ name, active: f.get("active") === "on" }).eq("id", id);
+      const { error } = await db().from("locations").update({ name, active: f.get("active") === "on", latitude, longitude, radius_m }).eq("id", id);
       if (error) throw error;
       return saved("Saved.");
     }
@@ -195,6 +200,7 @@ export async function saveSettings(_: FormResult, f: FormData): Promise<FormResu
       name, timezone, week_start, duplicate_window_seconds, long_shift_hours, meal_break_after_hours, min_meal_break_minutes,
       track_breaks: f.get("track_breaks") === "on", breaks_paid: f.get("breaks_paid") === "on", record_location: f.get("record_location") === "on",
       rest_breaks: f.get("rest_breaks") === "on", daily_summary: f.get("daily_summary") === "on",
+      phone_clocking: f.get("phone_clocking") === "on", phone_require_location: f.get("phone_require_location") === "on",
     }).eq("id", v.company.id);
     if (error) throw error;
     return saved("Settings saved.");
@@ -248,5 +254,17 @@ export async function sendTestSummary(): Promise<FormResult> {
     const m = summaryEmail(v.company, items.length ? items : [{ title: "Nothing to check today", lines: ["When something needs a look, it will be listed here."], link: `${await appUrl()}/today` }]);
     await sendEmail([v.employee.email], `[Test] ${m.subject}`, m.text, m.html);
     return { ok: true, message: `Test summary sent to ${v.employee.email}.` };
+  } catch (e) { return fail(e); }
+}
+
+/** A new poster code for a location: the old poster (and any photo of it) stops working. */
+export async function newPosterCode(_: FormResult, f: FormData): Promise<FormResult> {
+  try {
+    const v = await admin();
+    const id = str(f, "id");
+    await own(v, "locations", id);
+    const { error } = await db().from("locations").update({ qr_token: randomToken(18) }).eq("id", id);
+    if (error) throw error;
+    return saved("New poster code made. Print the new poster; the old one no longer works.");
   } catch (e) { return fail(e); }
 }

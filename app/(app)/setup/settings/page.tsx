@@ -55,6 +55,11 @@ export default async function Settings() {
             </div>
           </fieldset>
           <fieldset className="space-y-3">
+            <legend className="label">Clocking in by phone</legend>
+            {check("phone_clocking", c.phone_clocking, "Staff can clock in with their phone", "They scan the depot’s QR poster (Setup → Locations) with their own phone. No tablet needed.")}
+            {check("phone_require_location", c.phone_require_location, "Refuse phone scans away from the depot", "Off: scans from far away (or without location) are recorded but flagged on Review. On: they are refused. Set the depot’s position under Setup → Locations.")}
+          </fieldset>
+          <fieldset className="space-y-3">
             <legend className="label">Alerts</legend>
             {check("daily_summary", c.daily_summary, "Email managers a daily summary", "Early each morning, only when something needs a look: missing clock-outs, flagged scans, last week not approved, a kiosk offline, app errors. Goes to every active manager and administrator with an email.")}
           </fieldset>

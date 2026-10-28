@@ -7,11 +7,12 @@ import { localDate } from "@/lib/time";
 export default async function GetStarted({ company }: { company: Company }) {
   const year = localDate(new Date(), company.timezone).slice(0, 4);
   const count = (q: PromiseLike<{ count: number | null }>) => Promise.resolve(q).then(r => r.count ?? 0);
-  const [staff, kiosks, scans, holidays] = await Promise.all([
+  const [staff, kiosks, scans, holidays, posters] = await Promise.all([
     count(db().from("employees").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("active", true)),
     count(db().from("kiosks").select("id", { count: "exact", head: true }).eq("company_id", company.id).not("device_secret_hash", "is", null)),
-    count(db().from("clock_events").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("source", "kiosk")),
+    count(db().from("clock_events").select("id", { count: "exact", head: true }).eq("company_id", company.id).in("source", ["kiosk", "phone"])),
     count(db().from("public_holidays").select("id", { count: "exact", head: true }).eq("company_id", company.id).gte("date", `${year}-01-01`)),
+    count(db().from("locations").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("active", true).not("latitude", "is", null)),
   ]);
 
   const steps = [
@@ -19,8 +20,8 @@ export default async function GetStarted({ company }: { company: Company }) {
     { done: staff > 1, title: "Add your staff", body: "Name, role, and an email for anyone who will sign in.", href: "/setup/employees", cta: "Employees" },
     { done: holidays > 0, title: "Add public holidays", body: "One click for Queensland, then your local show day.", href: "/setup/holidays", cta: "Holidays" },
     { done: false, optional: true, title: "Print cards or key tags", body: "Wallet cards (10 per page) or key tags (30 per page).", href: "/setup/cards", cta: "QR cards" },
-    { done: kiosks > 0, title: "Pair the kiosk tablet", body: "Add a kiosk, then open its pairing link on the tablet.", href: "/setup/kiosks", cta: "Kiosks" },
-    { done: scans > 0, title: "Do a test scan", body: "Scan a card at the kiosk and check it shows under Today.", href: "/today", cta: "" },
+    { done: kiosks > 0 || (company.phone_clocking && posters > 0), title: "Put up the depot QR poster", body: "Switch on phone clocking in Settings, add the depot with its position under Locations, and print its poster. (Or pair a kiosk tablet.)", href: "/setup/locations", cta: "Locations" },
+    { done: scans > 0, title: "Do a test scan", body: "Scan the poster with your phone and clock in, then check it shows under Today.", href: "/today", cta: "" },
   ];
   const essentials = steps.filter(s => !s.optional);
   if (essentials.every(s => s.done)) return null;

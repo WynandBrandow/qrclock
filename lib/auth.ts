@@ -34,6 +34,8 @@ export type Company = Settings & {
   duplicate_window_seconds: number;
   record_location: boolean;
   daily_summary: boolean;
+  phone_clocking: boolean;
+  phone_require_location: boolean;
 };
 
 export type Viewer = {
@@ -47,6 +49,7 @@ export type Viewer = {
 
 export const PIN_COOKIE = "qc_pin";
 const PIN_HOURS = 12;
+const REMEMBER_DAYS = 120;
 
 export const canManage = (role: Role) => role === "manager" || role === "admin";
 
@@ -105,10 +108,12 @@ export async function assertViewer(roles?: Role[]): Promise<Viewer> {
   return v;
 }
 
-export async function startPinSession(employeeId: string, pinVersion: number) {
-  const exp = Date.now() + PIN_HOURS * 3600_000;
+/** remember = "this is my own phone": stay signed in for 120 days, so the depot poster works in one scan. */
+export async function startPinSession(employeeId: string, pinVersion: number, remember = false) {
+  const hours = remember ? REMEMBER_DAYS * 24 : PIN_HOURS;
+  const exp = Date.now() + hours * 3600_000;
   (await cookies()).set(PIN_COOKIE, sign(`${employeeId}|${exp}|${pinVersion}`), {
-    httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: PIN_HOURS * 3600,
+    httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: hours * 3600,
   });
 }
 

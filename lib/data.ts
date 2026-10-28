@@ -5,7 +5,7 @@ import type { Company } from "./auth";
 import { buildShifts, shiftsInWeek, totals, type ClockEvent, type Holiday, type Shift, type WeekTotals } from "./shifts";
 import { addDays, isDate, localDate, weekBounds, weekStartOf } from "./time";
 
-const EVENT_COLS = "id, employee_id, kind, occurred_at, source, flag, flag_resolved_at, replaces_id, location_id, kiosk_id, paid_break";
+const EVENT_COLS = "id, employee_id, kind, occurred_at, source, flag, flag_resolved_at, replaces_id, location_id, kiosk_id, paid_break, distance_m";
 // Rows per request. Must not exceed the project's PostgREST max_rows (Supabase default 1000),
 // or a short page would be read as the last one.
 const PAGE = 1000;

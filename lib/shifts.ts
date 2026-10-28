@@ -22,6 +22,7 @@ export type ClockEvent = {
   location_id: string | null;
   kiosk_id: string | null;
   paid_break: boolean | null;
+  distance_m?: number | null;
 };
 
 export type Settings = {
@@ -300,6 +301,8 @@ export const FLAG_LABEL: Record<string, string> = {
   clock_out_without_shift: "Clocked out with no open shift",
   break_without_shift: "Break started with no open shift",
   break_end_without_break: "Break ended with no break started",
+  away_from_site: "Phone scan away from the depot",
+  no_location: "Phone scan without location",
 };
 
 export const ISSUE_LABEL: Record<Issue, string> = {

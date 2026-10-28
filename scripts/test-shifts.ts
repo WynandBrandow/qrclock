@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildShifts, currentState, nextActions, shiftsInWeek, totals, type ClockEvent, type EventKind, type Holiday, type Settings } from "../lib/shifts";
 import { localDate, weekBounds, weekStartOf, zonedToUtc } from "../lib/time";
+import { distanceMeters } from "../lib/geo";
 
 const BNE: Settings = { timezone: "Australia/Brisbane", week_start: 1, track_breaks: true, breaks_paid: false, rest_breaks: false, long_shift_hours: 14, meal_break_after_hours: 5, min_meal_break_minutes: 30 };
 let n = 0;
@@ -157,4 +158,10 @@ test("category buckets always add up to the rounded worked minutes", () => {
 
 test("rest breaks add a third kiosk action when switched on", () => {
   assert.deepEqual(nextActions("working", { ...BNE, rest_breaks: true }), ["clock_out", "break_start", "rest_start"]);
+});
+
+test("distance: a few metres at the depot, about 250 km to Brisbane", () => {
+  assert.ok(distanceMeters({ lat: -25.54, lng: 152.70 }, { lat: -25.5401, lng: 152.7002 }) < 30);
+  const d = distanceMeters({ lat: -25.54, lng: 152.70 }, { lat: -27.4698, lng: 153.0251 });
+  assert.ok(d > 200_000 && d < 230_000, String(d));
 });

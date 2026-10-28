@@ -72,7 +72,7 @@ function qrVideo(text) {
   return Buffer.concat([Buffer.from(`YUV4MPEG2 W${W} H${H} F10:1 Ip A1:1 C420jpeg\n`), ...Array(10).fill(frame)]);
 }
 
-let employeeId = null, kioskId = null;
+let employeeId = null, kioskId = null, locationId = null;
 try {
   const admin = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   await admin.context().addCookies(adminCookies);
@@ -258,6 +258,45 @@ try {
     await phone.context().close();
   });
 
+  await step("phone clocking: scan the depot poster at the depot = clean; far away = recorded and flagged", async () => {
+    const { data: emp2 } = await db.from("employees").select("company_id").eq("id", employeeId).single();
+    const { data: loc, error: locErr } = await db.from("locations").insert({
+      company_id: emp2.company_id, name: "TEST depot e2e", latitude: -25.5400, longitude: 152.7000, radius_m: 200,
+    }).select("id, qr_token").single();
+    assert.ifError(locErr);
+    locationId = loc.id;
+    await db.rpc("backdate_test_events", { p_employee_id: employeeId, p_seconds: 120 });
+
+    const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true,
+      permissions: ["geolocation"], geolocation: { latitude: -25.5401, longitude: 152.7002, accuracy: 15 } });
+    const phone = await ctx.newPage();
+    watch(phone, "phone-clock");
+    await phone.goto(card);
+    await phone.locator("#pin").fill(PIN);
+    await phone.getByRole("button", { name: "See my hours" }).click();
+    await phone.waitForURL(`${base}/me`);
+    await phone.goto(`${base}/c/${loc.qr_token}`);
+    await phone.getByRole("heading", { name: "Hi TEST" }).waitFor();
+    await shot(phone, "phone-clock-375");
+    await phone.getByRole("button", { name: "Clock in" }).click();
+    await phone.getByRole("heading", { name: "Clocked in" }).waitFor();
+    let { data: ev } = await db.from("clock_events").select("source, distance_m, location_id, flag").eq("employee_id", employeeId)
+      .eq("status", "active").order("created_at", { ascending: false }).limit(1).single();
+    assert.equal(ev.source, "phone"); assert.equal(ev.location_id, loc.id); assert.equal(ev.flag, null);
+    assert.ok(ev.distance_m < 50, `distance ${ev.distance_m}`);
+
+    await db.rpc("backdate_test_events", { p_employee_id: employeeId, p_seconds: 120 });
+    await ctx.setGeolocation({ latitude: -27.4698, longitude: 153.0251, accuracy: 15 }); // Brisbane
+    await phone.goto(`${base}/c/${loc.qr_token}`);
+    await phone.getByRole("button", { name: "Clock out" }).click();
+    await phone.getByRole("heading", { name: "Clocked out" }).waitFor();
+    await phone.getByText("flagged for your manager").waitFor();
+    ({ data: ev } = await db.from("clock_events").select("flag, distance_m").eq("employee_id", employeeId)
+      .eq("status", "active").order("created_at", { ascending: false }).limit(1).single());
+    assert.equal(ev.flag, "away_from_site"); assert.ok(ev.distance_m > 100_000);
+    await ctx.close();
+  });
+
   await step("sign-in email link: opens on any device, Continue signs in, and the link works only once", async () => {
     // The same link the email template builds, from a server-made token (no email is sent).
     const l = await fetch(`${sbUrl}/auth/v1/admin/generate_link`, {
@@ -286,6 +325,7 @@ try {
     const { error } = await db.rpc("purge_test_data", { p_employee_id: employeeId });
     if (error) console.error("cleanup failed:", error.message);
   }
+  if (locationId) await db.from("locations").delete().eq("id", locationId);
   if (kioskId) {
     await db.from("scan_log").delete().eq("kiosk_id", kioskId);
     await db.from("kiosks").delete().eq("id", kioskId);

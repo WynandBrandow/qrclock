@@ -33,7 +33,7 @@ export default async function CardPage({ params }: PageProps<"/q/[token]">) {
             <>
               <h1 className="text-lg font-semibold">Hi {firstName(emp.full_name)}</h1>
               <p className="text-sm text-slate-600 mt-1 mb-5">
-                To clock in or out, scan this card at the kiosk. To see your hours here, enter your PIN.
+                Enter your PIN to see your hours and to clock in with this phone. Then, at the depot, scan the QR poster to clock in or out.
               </p>
               {emp.pin_hash ? <PinForm token={token} /> : (
                 <p className="text-sm rounded-lg bg-amber-50 ring-1 ring-amber-200 text-amber-900 px-3 py-2">

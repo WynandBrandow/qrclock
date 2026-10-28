@@ -22,8 +22,9 @@ export async function pinSignIn(_: PinState, form: FormData): Promise<PinState> 
   if (!(await checkPin(pin, row.pin_hash))) return { error: "Wrong PIN. Check it and try again." };
 
   await db().rpc("pin_succeeded", { p_employee_id: row.employee_id });
-  await startPinSession(row.employee_id, row.pin_version);
-  redirect("/me");
+  await startPinSession(row.employee_id, row.pin_version, form.get("remember") === "on");
+  const next = String(form.get("next") ?? "");
+  redirect(/^\/c\/[A-Za-z0-9_-]{16,64}$/.test(next) ? next : "/me");
 }
 
 function lockedMessage(until: string | null) {
