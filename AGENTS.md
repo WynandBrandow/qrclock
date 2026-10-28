@@ -22,6 +22,8 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 - Phone clocking (on for Aramex Maryborough, record-and-flag): staff scan the location's QR poster (`/c/<qr_token>`),
   signed in on their own phone (email, or card + PIN with a 120-day "remember"); the phone shares a position once per tap;
   only `distance_m` is stored; far/unknown = flag `away_from_site`/`no_location` (or refused if `phone_require_location`).
+- Optional passkeys (`phone_require_passkey`): Face ID / fingerprint confirms each phone punch (WebAuthn via
+  @simplewebauthn v14, `lib/passkeys.ts`; rpID = hostname of NEXT_PUBLIC_APP_URL, so moving domains means staff set up again).
 - Kiosk devices (optional): paired once via a one-time link (Setup → Kiosks); the device keeps an httpOnly secret cookie (`qc_kiosk`).
 
 ## Records, approvals, backups
