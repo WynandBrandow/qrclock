@@ -25,7 +25,7 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
       <div className="text-sm mb-2"><Link className="text-teal-700 hover:underline" href="/setup/employees">← Employees</Link></div>
       <PageHeader title={e.full_name} actions={<Link className="btn-secondary" href={`/timesheets/${e.id}`}>Timesheet</Link>} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 [&>section]:min-w-0">
         <section className="card p-5">
           <h2 className="font-semibold mb-4">Details</h2>
           <Form action={saveEmployee} submit="Save">
