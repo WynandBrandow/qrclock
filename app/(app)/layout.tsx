@@ -24,13 +24,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                 <div className="text-xs text-slate-500">{v.via === "pin" ? "Signed in with card" : ROLE_LABEL[v.role]}</div>
               </div>
               <form action="/signout" method="post">
-                <button className="btn-secondary px-3 py-1.5 text-xs whitespace-nowrap">Sign out</button>
+                <button className="btn-secondary px-3 py-1.5 text-xs whitespace-nowrap min-h-9">Sign out</button>
               </form>
             </div>
           </div>
         </header>
         <SecondaryNav role={v.role} />
-        <main className="flex-1 p-4 lg:p-8 pb-28 lg:pb-8 print:p-0">{children}</main>
+        <main id="main" tabIndex={-1} className="flex-1 p-4 lg:p-8 pb-28 lg:pb-8 print:p-0 outline-none">{children}</main>
       </div>
       <MobileNav role={v.role} />
     </div>

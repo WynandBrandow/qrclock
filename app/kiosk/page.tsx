@@ -1,8 +1,14 @@
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { currentKiosk } from "@/lib/kiosk";
 import Kiosk from "./Kiosk";
 
-export const metadata = { title: "Kiosk" };
+export const metadata: Metadata = {
+  title: "Kiosk",
+  manifest: "/kiosk.webmanifest",
+  appleWebApp: { capable: true, title: "Kiosk", statusBarStyle: "black-translucent" },
+};
+export const viewport: Viewport = { themeColor: "#020617", viewportFit: "cover" };
 
 const ERRORS: Record<string, string> = {
   invalid: "That pairing link isn't valid any more: it was already used, or it expired. Create a new one under Setup → Kiosks.",

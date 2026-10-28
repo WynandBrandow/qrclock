@@ -54,7 +54,7 @@ export default async function Timesheets({ searchParams }: PageProps<"/timesheet
                       const live = list.some(s => s.inProgress);
                       return (
                         <td key={days[i]} className={`px-3 py-3 text-right tabular-nums whitespace-nowrap ${bad ? "text-red-700 font-medium" : "text-slate-700"}`}>
-                          {list.length === 0 ? <span className="text-slate-300" aria-label="no shift">·</span> : live ? <Badge tone="teal">on</Badge> : bad ? <span aria-label="needs fixing">!</span> : fmtMinutes(mins)}
+                          {list.length === 0 ? <span className="text-slate-400" aria-label="no shift">·</span> : live ? <Badge tone="teal">on</Badge> : bad ? <span aria-label="needs fixing">!</span> : fmtMinutes(mins)}
                         </td>
                       );
                     })}

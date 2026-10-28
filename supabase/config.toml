@@ -251,6 +251,13 @@ sender_name = "QR Clock"
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
+# Sign-in link: a token_hash link to /auth/confirm (works on any device, unlike the default PKCE
+# link, which only works in the browser that asked for it). /auth/confirm shows a button first, so
+# email scanners that open links can't use it up.
+[auth.email.template.magic_link]
+subject = "Your QR Clock sign-in link"
+content_path = "./supabase/templates/magic_link.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

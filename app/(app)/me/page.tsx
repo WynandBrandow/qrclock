@@ -42,6 +42,17 @@ export default async function MyHours({ searchParams }: PageProps<"/me">) {
       {!!t?.issueCount && (
         <p className="mt-4 text-sm text-slate-600"><Badge tone="red">Needs a fix</Badge> Shifts marked like this are missing a scan. Your manager will correct them.</p>
       )}
+      <section className="mt-8 card p-5 flex flex-col sm:flex-row gap-5 items-start">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/me-card" alt={`QR card for ${v.employee.full_name}`} width={176} height={252} className="w-44 rounded-lg ring-1 ring-slate-200 bg-white shrink-0" />
+        <div className="text-sm text-slate-700 space-y-2">
+          <h2 className="text-lg font-semibold text-slate-900">Your card on your phone</h2>
+          <p>Keep a copy of your QR card on your phone, as well as on your key tag or in your wallet. At the kiosk, turn your screen brightness up and hold the code to the camera.</p>
+          <p><strong>iPhone:</strong> press and hold the picture, then <em>Add to Photos</em>. <strong>Android:</strong> use the button below.</p>
+          <a className="btn-primary" href="/me-card?download=1" download>Save card picture</a>
+          <p className="text-xs text-slate-600">Treat it like a key: anyone with this code can clock you in. If you lose it, ask your manager for a new one.</p>
+        </div>
+      </section>
       {changes.length > 0 && (
         <section className="mt-8">
           <h2 className="text-lg font-semibold mb-3">Changes to your times this week</h2>

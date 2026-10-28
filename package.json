@@ -11,7 +11,8 @@
     "test:db": "tsx scripts/test-db.mts",
     "seed": "tsx scripts/seed.mts",
     "verify:live": "node scripts/live-flow.mjs",
-    "backup:open": "tsx scripts/backup-open.mts"
+    "backup:open": "tsx scripts/backup-open.mts",
+    "verify:all": "node scripts/verify-all.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

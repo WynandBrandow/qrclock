@@ -3,6 +3,8 @@ import { timingSafeEqual } from "node:crypto";
 import { del, list, put } from "@vercel/blob";
 import { db } from "@/lib/supabase/server";
 import { dumpAll, seal } from "@/lib/backup";
+import { buildSummary, managerEmails, sendEmail, summaryEmail } from "@/lib/summary";
+import type { Company } from "@/lib/auth";
 
 export const maxDuration = 60;
 
@@ -14,7 +16,8 @@ const SCAN_LOG_DAYS = 90;
 // keep-alive), with "Authorization: Bearer <CRON_SECRET>". It:
 //   1. touches the database, so the free Supabase plan never pauses it,
 //   2. writes an encrypted backup of every table to the private Blob store,
-//   3. prunes old backups and old scan-log rows.
+//   3. prunes old backups and old scan-log rows,
+//   4. emails managers a summary of anything to check (if switched on).
 export async function POST(req: NextRequest) {
   const want = Buffer.from(`Bearer ${process.env.CRON_SECRET ?? ""}`);
   const got = Buffer.from(req.headers.get("authorization") ?? "");
@@ -49,5 +52,23 @@ export async function POST(req: NextRequest) {
     .lt("created_at", new Date(Date.now() - SCAN_LOG_DAYS * 86400_000).toISOString());
   if (pruneError) console.error("scan_log prune", pruneError.message);
 
-  return NextResponse.json({ ok: true, backup: blob.pathname, rows: counts, removedBackups: old.length, prunedScans: pruned ?? 0 });
+  // Daily summary to managers, for companies that switched it on, only when something needs a look.
+  const summaries: Record<string, number | string> = {};
+  const { data: companies } = await db().from("companies").select("*").eq("daily_summary", true);
+  for (const c of (companies ?? []) as Company[]) {
+    try {
+      const items = await buildSummary(c);
+      const to = await managerEmails(c.id);
+      if (items.length && to.length) {
+        const m = summaryEmail(c, items);
+        await sendEmail(to, m.subject, m.text, m.html);
+      }
+      summaries[c.name] = items.length;
+    } catch (e) {
+      console.error("daily summary", c.name, e);
+      summaries[c.name] = "failed";
+    }
+  }
+
+  return NextResponse.json({ ok: true, backup: blob.pathname, rows: counts, removedBackups: old.length, prunedScans: pruned ?? 0, summaries });
 }

@@ -52,9 +52,9 @@ export default async function Kiosks() {
             <div className="grid gap-6 md:grid-cols-2">
               <Form action={saveKiosk} submit="Save">
                 <input type="hidden" name="id" value={k.id} />
-                <div><label className="label">Name</label><input name="name" className="input" defaultValue={k.name} required /></div>
-                <LocationSelect locs={locs ?? []} value={k.location_id} />
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={k.active} className="h-4 w-4 accent-teal-600" /> On (switching off also unpairs it)</label>
+                <div><label className="label" htmlFor={`k-${k.id}-name`}>Name</label><input id={`k-${k.id}-name`} name="name" className="input" defaultValue={k.name} required /></div>
+                <LocationSelect id={`k-${k.id}-loc`} locs={locs ?? []} value={k.location_id} />
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={k.active} className="h-4 w-4 accent-teal-600" /> Active (switching off also unpairs it)</label>
               </Form>
               {k.active && (
                 <div className="space-y-4">
@@ -76,19 +76,19 @@ export default async function Kiosks() {
       <section className="card p-5 max-w-xl">
         <h2 className="font-semibold mb-4">Add a kiosk</h2>
         <Form action={saveKiosk} submit="Add kiosk" reset>
-          <div><label className="label">Name</label><input name="name" className="input" placeholder="e.g. Reception tablet" required /></div>
-          <LocationSelect locs={locs ?? []} />
+          <div><label className="label" htmlFor="new-kiosk-name">Name</label><input id="new-kiosk-name" name="name" className="input" placeholder="e.g. Shed tablet" required /></div>
+          <LocationSelect id="new-kiosk-loc" locs={locs ?? []} />
         </Form>
       </section>
     </div>
   );
 }
 
-function LocationSelect({ locs, value }: { locs: { id: string; name: string }[]; value?: string | null }) {
+function LocationSelect({ id, locs, value }: { id: string; locs: { id: string; name: string }[]; value?: string | null }) {
   return (
     <div>
-      <label className="label">Location</label>
-      <select name="location_id" className="input" defaultValue={value ?? ""}>
+      <label className="label" htmlFor={id}>Location</label>
+      <select id={id} name="location_id" className="input" defaultValue={value ?? ""}>
         <option value="">No location</option>
         {locs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
       </select>

@@ -1,5 +1,5 @@
 import { requireViewer } from "@/lib/auth";
-import { saveSettings } from "../actions";
+import { saveSettings, sendTestSummary } from "../actions";
 import Form from "@/components/Form";
 import { PageHeader } from "@/components/ui";
 
@@ -55,6 +55,10 @@ export default async function Settings() {
             </div>
           </fieldset>
           <fieldset className="space-y-3">
+            <legend className="label">Alerts</legend>
+            {check("daily_summary", c.daily_summary, "Email managers a daily summary", "Early each morning, only when something needs a look: missing clock-outs, flagged scans, last week not approved, a kiosk offline, app errors. Goes to every active manager and administrator with an email.")}
+          </fieldset>
+          <fieldset className="space-y-3">
             <legend className="label">Scans</legend>
             {check("record_location", c.record_location, "Record the kiosk and location", "Each scan stores which kiosk and location it came from.")}
             <div className="grid gap-4 sm:grid-cols-2">
@@ -69,6 +73,11 @@ export default async function Settings() {
             </div>
           </fieldset>
         </Form>
+      </section>
+      <section className="card p-5 mt-6">
+        <h2 className="font-semibold">Try the daily summary</h2>
+        <p className="text-sm text-slate-600 mt-1 mb-4">Sends today&apos;s summary to you only, so you can see what managers get.</p>
+        <Form action={sendTestSummary} submit="Email me a test summary" tone="secondary" pendingLabel="Sending…" />
       </section>
     </div>
   );

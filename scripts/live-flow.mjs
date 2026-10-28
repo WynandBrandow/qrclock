@@ -3,7 +3,8 @@
 // USB-scanner keyboard path), corrects an event, approves the week, exports CSV, signs in with
 // card + PIN on a phone, then deletes everything it created.
 // Run: npm run verify:live -- [--base https://qrclock.vercel.app] [--email wb@ccov.co.za]
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import QRCode from "qrcode";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
@@ -47,6 +48,21 @@ const watch = (page, label) => {
 let n = 0;
 const step = async (name, fn) => { await fn(); n++; console.log("✔", name); };
 const shot = (page, name) => page.screenshot({ path: join(out, `${name}.png`), fullPage: true });
+
+/** A Y4M video (Chrome's fake-camera format) of a QR code on a white card, 640×480 grey frames. */
+function qrVideo(text) {
+  const qr = QRCode.create(text, { errorCorrectionLevel: "H" });
+  const n = qr.modules.size, W = 640, H = 480, scale = Math.floor(360 / (n + 8)), size = (n + 8) * scale;
+  const ox = (W - size) / 2 | 0, oy = (H - size) / 2 | 0;
+  const y = Buffer.alloc(W * H, 120); // grey background, like a room
+  for (let r = 0; r < n + 8; r++) for (let c = 0; c < n + 8; c++) {
+    const dark = r >= 4 && c >= 4 && r < n + 4 && c < n + 4 && qr.modules.get(r - 4, c - 4);
+    for (let dy = 0; dy < scale; dy++) y.fill(dark ? 16 : 235, (oy + r * scale + dy) * W + ox + c * scale, (oy + r * scale + dy) * W + ox + (c + 1) * scale);
+  }
+  const uv = Buffer.alloc((W / 2) * (H / 2) * 2, 128);
+  const frame = Buffer.concat([Buffer.from("FRAME\n"), y, uv]);
+  return Buffer.concat([Buffer.from(`YUV4MPEG2 W${W} H${H} F10:1 Ip A1:1 C420jpeg\n`), ...Array(10).fill(frame)]);
+}
 
 let employeeId = null, kioskId = null;
 try {
@@ -100,6 +116,29 @@ try {
     await again.getByRole("button", { name: /make this the kiosk/ }).click();
     await again.getByText("isn't valid any more").waitFor();
     await again.context().close();
+  });
+
+  await step("real camera path: the kiosk reads the QR code from a camera feed", async () => {
+    // Chrome's fake camera plays a video file; this one shows the employee's QR card, so the
+    // kiosk's own camera scanner (not the USB path) has to find and decode it.
+    const video = join(out, "qr-card.y4m");
+    writeFileSync(video, qrVideo(card));
+    const camBrowser = await chromium.launch({
+      executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true,
+      args: ["--headless=new", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", `--use-file-for-fake-video-capture=${video}`],
+    });
+    try {
+      const ctx = await camBrowser.newContext({ viewport: { width: 768, height: 1024 }, permissions: ["camera"] });
+      await ctx.addCookies(await kiosk.context().cookies()); // the paired kiosk's device cookie
+      const cam = await ctx.newPage();
+      watch(cam, "camera");
+      await cam.goto(`${base}/kiosk`);
+      await cam.getByRole("heading", { name: "Hi TEST" }).waitFor({ timeout: 20000 });
+      await shot(cam, "kiosk-camera-768");
+      await cam.getByRole("button", { name: "Cancel" }).click();
+    } finally {
+      await camBrowser.close();
+    }
   });
 
   await step("scan: identify offers clock in; clock in records; an immediate rescan is a duplicate", async () => {

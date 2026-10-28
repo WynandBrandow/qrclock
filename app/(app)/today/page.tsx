@@ -5,6 +5,7 @@ import { activeEvents, currentWeekStart, must } from "@/lib/data";
 import { currentState, eventLabel, type ClockEvent } from "@/lib/shifts";
 import { fmtDay, fmtTime, localDate, zonedToUtc } from "@/lib/time";
 import { Badge, Empty, PageHeader } from "@/components/ui";
+import GetStarted from "@/components/GetStarted";
 
 export const metadata = { title: "Today" };
 
@@ -34,6 +35,7 @@ export default async function Today() {
   return (
     <div className="max-w-5xl">
       <PageHeader title="Today" sub={fmtDay(today)} />
+      {v.role === "admin" && <GetStarted company={c} />}
 
       {(!!flags || !!unknown) && (
         <Link href="/review" className="block card p-4 mb-6 ring-amber-300 bg-amber-50 hover:bg-amber-100">
@@ -46,7 +48,7 @@ export default async function Today() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="text-lg font-semibold mb-3">On shift now <span className="text-slate-400 font-normal">({working.length})</span></h2>
+          <h2 className="text-lg font-semibold mb-3">On shift now <span className="text-slate-500 font-normal">({working.length})</span></h2>
           {working.length === 0 ? <Empty>Nobody is clocked in.</Empty> : (
             <ul className="card divide-y divide-slate-100">
               {working.map(p => (
@@ -68,7 +70,7 @@ export default async function Today() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Today&apos;s scans <span className="text-slate-400 font-normal">({todays.length})</span></h2>
+          <h2 className="text-lg font-semibold mb-3">Today&apos;s scans <span className="text-slate-500 font-normal">({todays.length})</span></h2>
           {todays.length === 0 ? <Empty>No scans yet today.</Empty> : (
             <ul className="card divide-y divide-slate-100 text-sm">
               {todays.map(e => (

@@ -43,7 +43,7 @@ export default async function Review() {
       <PageHeader title="Review" sub={`Problems from the last ${LOOKBACK_DAYS} days. Fix them on the employee's timesheet.`} />
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Incomplete shifts <span className="text-slate-400 font-normal">({problems.length})</span></h2>
+        <h2 className="text-lg font-semibold mb-3">Incomplete shifts <span className="text-slate-500 font-normal">({problems.length})</span></h2>
         {problems.length === 0 ? <Empty>Every shift has a clock-in and a clock-out.</Empty> : (
           <ul className="card divide-y divide-slate-100">
             {problems.map(({ id, s }) => (
@@ -59,7 +59,7 @@ export default async function Review() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Flagged scans <span className="text-slate-400 font-normal">({flagged.length ?? 0})</span></h2>
+        <h2 className="text-lg font-semibold mb-3">Flagged scans <span className="text-slate-500 font-normal">({flagged.length ?? 0})</span></h2>
         {!flagged.length ? <Empty>No unusual scans to check.</Empty> : (
           <ul className="card divide-y divide-slate-100">
             {flagged.map(e => (
@@ -76,7 +76,7 @@ export default async function Review() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Rejected scans, last 7 days <span className="text-slate-400 font-normal">({scans.length ?? 0})</span></h2>
+        <h2 className="text-lg font-semibold mb-3">Rejected scans, last 7 days <span className="text-slate-500 font-normal">({scans.length ?? 0})</span></h2>
         {!scans.length ? <Empty>No rejected scans.</Empty> : (
           <ul className="card divide-y divide-slate-100 text-sm">
             {scans.map(s => (

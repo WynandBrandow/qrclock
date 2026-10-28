@@ -5,6 +5,7 @@ import { db } from "@/lib/supabase/server";
 import { hashPin, randomToken, sha256 } from "@/lib/crypto";
 import { appUrl } from "@/lib/cards";
 import { queenslandHolidays } from "@/lib/holidays";
+import { buildSummary, sendEmail, summaryEmail } from "@/lib/summary";
 
 export type FormResult = { ok: boolean; error?: string; message?: string; link?: string };
 
@@ -191,7 +192,7 @@ export async function saveSettings(_: FormResult, f: FormData): Promise<FormResu
     const { error } = await db().from("companies").update({
       name, timezone, week_start, duplicate_window_seconds, long_shift_hours, meal_break_after_hours, min_meal_break_minutes,
       track_breaks: f.get("track_breaks") === "on", breaks_paid: f.get("breaks_paid") === "on", record_location: f.get("record_location") === "on",
-      rest_breaks: f.get("rest_breaks") === "on",
+      rest_breaks: f.get("rest_breaks") === "on", daily_summary: f.get("daily_summary") === "on",
     }).eq("id", v.company.id);
     if (error) throw error;
     return saved("Settings saved.");
@@ -233,5 +234,17 @@ export async function addQueenslandHolidays(_: FormResult, f: FormData): Promise
       .upsert(rows, { onConflict: "company_id,date,from_time", ignoreDuplicates: true, count: "exact" });
     if (error) throw error;
     return saved(`Added ${count ?? rows.length} Queensland holidays for ${year}. Check them against qld.gov.au and add your local show holiday.`);
+  } catch (e) { return fail(e); }
+}
+
+/** Sends the daily summary to the admin who clicked, right now, so they can see what it looks like. */
+export async function sendTestSummary(): Promise<FormResult> {
+  try {
+    const v = await admin();
+    if (!v.employee.email) return { ok: false, error: "Your account has no email address." };
+    const items = await buildSummary(v.company);
+    const m = summaryEmail(v.company, items.length ? items : [{ title: "Nothing to check today", lines: ["When something needs a look, it will be listed here."], link: `${await appUrl()}/today` }]);
+    await sendEmail([v.employee.email], `[Test] ${m.subject}`, m.text, m.html);
+    return { ok: true, message: `Test summary sent to ${v.employee.email}.` };
   } catch (e) { return fail(e); }
 }

@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_errors: {
+        Row: {
+          created_at: string
+          digest: string | null
+          id: number
+          message: string
+          method: string | null
+          path: string | null
+        }
+        Insert: {
+          created_at?: string
+          digest?: string | null
+          id?: never
+          message: string
+          method?: string | null
+          path?: string | null
+        }
+        Update: {
+          created_at?: string
+          digest?: string | null
+          id?: never
+          message?: string
+          method?: string | null
+          path?: string | null
+        }
+        Relationships: []
+      }
       clock_events: {
         Row: {
           company_id: string
@@ -128,6 +155,7 @@ export type Database = {
         Row: {
           breaks_paid: boolean
           created_at: string
+          daily_summary: boolean
           duplicate_window_seconds: number
           id: string
           long_shift_hours: number
@@ -143,6 +171,7 @@ export type Database = {
         Insert: {
           breaks_paid?: boolean
           created_at?: string
+          daily_summary?: boolean
           duplicate_window_seconds?: number
           id?: string
           long_shift_hours?: number
@@ -158,6 +187,7 @@ export type Database = {
         Update: {
           breaks_paid?: boolean
           created_at?: string
+          daily_summary?: boolean
           duplicate_window_seconds?: number
           id?: string
           long_shift_hours?: number
@@ -612,6 +642,7 @@ export type Database = {
         Args: { p_employee_id: string; p_seconds: number }
         Returns: undefined
       }
+      call_daily_job: { Args: never; Returns: number }
       correct_event: {
         Args: {
           p_by: string

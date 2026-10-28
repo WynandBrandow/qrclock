@@ -63,7 +63,8 @@ export default async function EmployeePage({ params }: PageProps<"/setup/employe
           </div>
           <div className="overflow-x-auto"><IdCard name={e.full_name} company={v.company.name} svg={svg} issued={fmtDateTime(e.qr_issued_at, tz)} /></div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary" href={`/setup/cards?ids=${e.id}`}>Print this card</Link>
+            <Link className="btn-secondary" href={`/setup/cards?ids=${e.id}`}>Print wallet card</Link>
+            <Link className="btn-secondary" href={`/setup/cards?format=tag&ids=${e.id}`}>Print key tag</Link>
           </div>
           <details className="text-sm">
             <summary className="cursor-pointer text-slate-600">Card lost or stolen?</summary>

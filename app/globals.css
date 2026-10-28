@@ -9,6 +9,16 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+/* A clear focus ring on everything keyboard users can reach (WCAG 2.4.7). */
+:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
 @layer components {
 .btn-primary, .btn-secondary, .btn-danger {
   @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;

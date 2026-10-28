@@ -32,6 +32,7 @@ export type Company = Settings & {
   name: string;
   duplicate_window_seconds: number;
   record_location: boolean;
+  daily_summary: boolean;
 };
 
 export type Viewer = {
