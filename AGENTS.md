@@ -3,7 +3,7 @@
 Employee time clock: staff scan a personal QR card at a kiosk tablet to clock in/out and take breaks;
 managers review, correct and approve weekly hours. Standalone, multi-company ready (one company today).
 
-- **Live:** see `NEXT_PUBLIC_APP_URL` on Vercel (project `qrclock`, region syd1). Repo: GitHub `WynandBrandow/qrclock`.
+- **Live:** https://qrclock.vercel.app (Vercel project `qrclock`, team wynandbrandows-projects, region syd1). Deployed with `vercel deploy --prod` from this folder; no GitHub repo yet (to create: WynandBrandow/qrclock, private, then `vercel git connect`).
 - **Database:** Supabase project `vubrnyoecvtkfrlwvwuv` (org "QR Clock", free plan, Sydney). Migrations in `supabase/migrations`, apply with `npx supabase db push`.
 - **Stack:** Next.js 16 (App Router, classic dynamic rendering, `cacheComponents` off), Tailwind 4, `@supabase/ssr`.
 
@@ -23,12 +23,14 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 ## Commands
 
 - `npm test`: shift/time unit tests. `npm run test:db`: database rules against the real project (throwaway company, cleaned up).
+- `npm run verify:live`: end-to-end on the live site as Mathys (minted session): kiosk pairing, scans, correction, approval, CSV, card + PIN. Creates TEST data and deletes it. Run after every deploy.
 - `npm run seed -- "<Business>" "<Admin name>" <email>`: first company + admin.
 - After schema changes: `npx supabase gen types typescript --linked --schema public > lib/supabase/types.ts`.
 
 ## Session log
 
-- 28 Oct 2026: project created; schema, kiosk, timesheets, review, setup, CSV export; seeded "Allegra Hervey Bay" with Mathys as admin.
+- 28 Oct 2026: project created; schema, kiosk, timesheets, review, setup, CSV export; seeded "Allegra Hervey Bay" with Mathys as admin. Live at qrclock.vercel.app; verify:live 10/10.
+  Magic-link email uses Supabase's built-in sender, which only delivers to the org's own members and ~2 emails/hour: add custom SMTP (Supabase → Auth → SMTP) before inviting staff by email.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
