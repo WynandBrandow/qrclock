@@ -16,7 +16,7 @@ weekly hours for payroll. Standalone and multi-company ready; one company today.
 | Email | Resend (account wynandb@ccov.co.za, send-only key `RESEND_API_KEY`), domain ccov.co.za verified. Supabase auth SMTP → smtp.resend.com, from noreply@ccov.co.za, 30/hour. |
 | Backups | Private Vercel Blob store `qrclock-backups` (see Records) |
 | Secrets | `.env.local` (never committed): Supabase URL/anon/service keys, `APP_SECRET`, `CRON_SECRET`, `BACKUP_KEY`, `RESEND_API_KEY`, `DATABASE_URL`. Same names on Vercel (production). DB password is not stored here. |
-| People docs | Admin manual (Morne): https://claude.ai/artifact/NZsCJ37jPo1uHMq1jxGDme · Staff Quick Start: https://claude.ai/artifact/HeGR77NzrXqErFiNP9CMdG · WhatsApp go-live note: `docs/whatsapp-morne.txt`. Update the manuals whenever behaviour staff or admins see changes. |
+| People docs | Admin manual (Morne): https://claude.ai/artifact/NZsCJ37jPo1uHMq1jxGDme · Staff Quick Start: https://claude.ai/artifact/HeGR77NzrXqErFiNP9CMdG · Staff announcement + FAQ: https://claude.ai/artifact/KVr6Xhr846KALk8oWSenop · WhatsApp go-live note: `docs/whatsapp-morne.txt`. Update the manuals whenever behaviour staff or admins see changes. |
 
 ## People and current settings (Aramex Maryborough)
 
