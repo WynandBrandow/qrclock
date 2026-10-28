@@ -43,11 +43,13 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 
 ## Session log
 
-- 28 Oct 2026: project created; schema, kiosk, timesheets, review, setup, CSV export; seeded "Allegra Hervey Bay" with Mathys as admin. Live at qrclock.vercel.app; verify:live 10/10.
+- 28 Oct 2026: project created; schema, kiosk, timesheets, review, setup, CSV export; seeded the company with Mathys as admin (renamed "Aramex Maryborough" on 29 Oct 2026). Live at qrclock.vercel.app; verify:live 10/10.
 - 29 Oct 2026: GitHub connected (push to main deploys). Audit with 5 agents → Phase 1+2 built: public sign-up closed,
   scanner-Enter kiosk bug, PIN lockout, permanent records, locked approvals, midnight split + holiday/weekend hours,
   rest vs meal breaks, payroll export, kiosk health, daily backup. test 19/19, test:db 17/17, verify:live 10/10.
-  Resend: domain ccov.co.za added; Xneelo publishes the two CNAMEs with the zone appended (support ticket sent).
+  Resend live: ccov.co.za verified (Xneelo fixed the CNAMEs), Supabase sends sign-in links via smtp.resend.com from
+  noreply@ccov.co.za, 30 emails/hour. Never set [auth.email] enable_signup = false: it turns off email sign-in
+  entirely (it broke magic links for a few hours); test:db now checks the live auth settings.
   Magic-link email uses Supabase's built-in sender, which only delivers to the org's own members and ~2 emails/hour: add custom SMTP (Supabase → Auth → SMTP) before inviting staff by email.
 
 <!-- BEGIN:nextjs-agent-rules -->

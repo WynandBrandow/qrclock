@@ -140,6 +140,13 @@ try {
     assert.ok((await db.rpc("purge_test_data", { p_employee_id: real!.id })).error);
     assert.ok((await db.rpc("backdate_test_events", { p_employee_id: real!.id, p_seconds: 1 })).error);
   });
+  await step("auth settings: email sign-in on, public sign-up off", async () => {
+    // Turning [auth.email] enable_signup off disables email sign-in entirely (29 Oct 2026); only
+    // [auth] enable_signup must be off.
+    const s = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY } }).then(r => r.json());
+    assert.equal(s.external?.email, true, "email sign-in must be enabled");
+    assert.equal(s.disable_signup, true, "public sign-up must be disabled");
+  });
   await step("the public (anon) key can read nothing and call nothing", async () => {
     for (const t of ["companies", "employees", "clock_events", "event_corrections", "kiosks", "scan_log", "timesheet_approvals", "locations", "public_holidays"] as const) {
       const { data } = await anon.from(t).select("*").limit(1);
