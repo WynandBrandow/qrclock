@@ -17,7 +17,8 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 - **Punches go through `record_punch`** (row lock, repeat-scan window, flags). The kiosk only offers `nextActions()` from `lib/shifts.ts`.
 - **Shift maths lives in `lib/shifts.ts`** (pure, unit-tested); time zones in `lib/time.ts` (company time zone, never server/browser).
 - **The menu lives in `lib/nav.ts`; never add a menu item anywhere else** (Sidebar ≥1024 px, sliding MobileNav below).
-- Sign-in: email magic link (`/login`), or card + PIN on a phone (`/q/<token>`, 12 h cookie, treated as role `employee` only).
+- Sign-in: email magic link (`/login`; the email template in supabase/templates links to `/auth/confirm` with a
+  token_hash, which shows a Continue button first, so it works on any device and email scanners can't use it up), or card + PIN on a phone (`/q/<token>`, 12 h cookie, treated as role `employee` only).
 - Kiosk devices: paired once via a one-time link (Setup → Kiosks); the device keeps an httpOnly secret cookie (`qc_kiosk`).
 
 ## Records, approvals, backups
@@ -36,12 +37,19 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
 
 ## Commands
 
+- `npm run verify:all`: every check (types, lint, unit, database rules, live end-to-end incl. a fake-camera QR scan,
+  live page sweep) with a summary; `-- --quick` for static + unit only. Run after every deploy.
 - `npm test`: shift/time unit tests. `npm run test:db`: database rules against the real project (throwaway company, cleaned up).
 - `npm run verify:live`: end-to-end on the live site as Mathys (minted session): kiosk pairing, scans, correction, approval, CSV, card + PIN. Creates TEST data and deletes it. Run after every deploy.
 - `npm run seed -- "<Business>" "<Admin name>" <email>`: first company + admin.
 - Scripts read `.env.local` through `scripts/env.mts`, which wins over the shell and refuses any other project's file:
   this PC has Eternal Echoes' Supabase keys set system-wide (that's fine), so a script must never fall back to them.
 - After schema changes: `npx supabase gen types typescript --linked --schema public > lib/supabase/types.ts`.
+
+## Not yet switched on
+
+- CI: `docs/github-ci.yml` must be added on GitHub by hand (the PC's git token lacks the workflow scope).
+- Daily summary email: off by default (Setup → Settings); "Email me a test summary" sends one to the clicking admin.
 
 ## Session log
 
@@ -52,6 +60,10 @@ managers review, correct and approve weekly hours. Standalone, multi-company rea
   Resend live: ccov.co.za verified (Xneelo fixed the CNAMEs), Supabase sends sign-in links via smtp.resend.com from
   noreply@ccov.co.za, 30 emails/hour. Never set [auth.email] enable_signup = false: it turns off email sign-in
   entirely (it broke magic links for a few hours); test:db now checks the live auth settings.
+- 29 Oct 2026 (later): wallet cards + key tags (QR level H), phone card, Phase 3 (onboarding, PWA, alerts, a11y,
+  loading/error), cross-device sign-in link, verify:all 6/6 with live 12/12. Junk mail: links to vercel.app from a
+  ccov.co.za sender; proposed custom domain clock.ccov.co.za. Broken Resend *receiving* MX (priority 9) on ccov.co.za
+  must be deleted at Xneelo.
   Magic-link email uses Supabase's built-in sender, which only delivers to the org's own members and ~2 emails/hour: add custom SMTP (Supabase → Auth → SMTP) before inviting staff by email.
 
 <!-- BEGIN:nextjs-agent-rules -->

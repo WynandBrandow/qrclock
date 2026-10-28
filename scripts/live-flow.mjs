@@ -243,9 +243,32 @@ try {
     const items = await phone.locator('nav[aria-label="Main menu"] a:visible').allInnerTexts();
     assert.deepEqual(items.map(s => s.trim()), ["My hours"]);
     await phone.goto(`${base}/today`);
-    assert.equal(new URL(phone.url()).pathname, "/me");
+    // Pages stream behind a loading screen, so the redirect can land just after the first bytes.
+    await phone.waitForURL(u => new URL(u).pathname === "/me", { timeout: 10000 });
+    assert.equal(await phone.getByRole("heading", { name: "Today" }).count(), 0, "a card session must never see the manager page");
     assert.equal((await phone.context().request.get(`${base}/api/export`)).status(), 403);
     await phone.context().close();
+  });
+
+  await step("sign-in email link: opens on any device, Continue signs in, and the link works only once", async () => {
+    // The same link the email template builds, from a server-made token (no email is sent).
+    const l = await fetch(`${sbUrl}/auth/v1/admin/generate_link`, {
+      method: "POST", headers: { apikey: service, Authorization: `Bearer ${service}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "magiclink", email }),
+    }).then(r => r.json());
+    const link = `${base}/auth/confirm?token_hash=${l.hashed_token ?? l.properties?.hashed_token}&type=email`;
+    const phone = await (await browser.newContext({ viewport: { width: 375, height: 812 } })).newPage();
+    watch(phone, "signin");
+    await phone.goto(link); // a scanner's GET stops here
+    await phone.getByRole("button", { name: "Continue" }).click();
+    await phone.waitForURL(u => ["/today", "/me"].includes(new URL(u).pathname));
+    await phone.context().close();
+    const again = await (await browser.newContext()).newPage();
+    await again.goto(link);
+    await again.getByRole("button", { name: "Continue" }).click();
+    await again.waitForURL(u => new URL(u).pathname === "/login");
+    await again.getByText("didn't work").waitFor();
+    await again.context().close();
   });
 
   assert.deepEqual(errors, [], "browser errors:\n" + errors.join("\n"));

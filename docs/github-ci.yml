@@ -1,3 +1,5 @@
+# To switch on: in GitHub, Add file → Create new file → .github/workflows/ci.yml, paste this file.
+# (The token on Mathys's PC lacks the "workflow" scope, so Claude can't push workflow files.)
 # Runs on every push and pull request: type-check, lint and the unit tests. (The database and
 # live-site suites need secrets and run from Mathys's PC: npm run verify:all.)
 name: CI
