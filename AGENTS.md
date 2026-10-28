@@ -3,7 +3,7 @@
 Employee time clock: staff scan a personal QR card at a kiosk tablet to clock in/out and take breaks;
 managers review, correct and approve weekly hours. Standalone, multi-company ready (one company today).
 
-- **Live:** https://qrclock.vercel.app (Vercel project `qrclock`, team wynandbrandows-projects, region syd1). Deployed with `vercel deploy --prod` from this folder; no GitHub repo yet (to create: WynandBrandow/qrclock, private, then `vercel git connect`).
+- **Live:** https://qrclock.vercel.app (Vercel project `qrclock`, team wynandbrandows-projects, region syd1). Deployed with `vercel deploy --prod` from this folder; GitHub `WynandBrandow/qrclock` (private), connected to Vercel: a push to main deploys.
 - **Database:** Supabase project `vubrnyoecvtkfrlwvwuv` (org "QR Clock", free plan, Sydney). Migrations in `supabase/migrations`, apply with `npx supabase db push`.
 - **Stack:** Next.js 16 (App Router, classic dynamic rendering, `cacheComponents` off), Tailwind 4, `@supabase/ssr`.
 
